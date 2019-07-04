@@ -12,6 +12,12 @@ Steps:
 
 ![Flow around cylinder with Reynold's number 200.](./figures/case-result.png)
 
+To install the requirements, also clone [ParaNoodles](https://github.com/ParallelWindfarms/paranoodles) and run `pip install .` from its project root. To install additional requirements, have OpenFOAM installed and:
+
+```shell
+pip install -r requirements.txt
+```
+
 ## PyFOAM
 
 PyFOAM is not so well documented. For our application we'd like to do two things: modify the run-directory and run `icoFoam`. We'll start with the following modules:
@@ -89,6 +95,31 @@ change the end time
 ``` {.python session=0}
 controlDict['endTime'] = 20
 controlDict.writeFile()
+```
+
+# Interface with ParaNoodles
+
+We need to define the following:
+
+* `Vector`
+* fine `Solution`
+* coarse `Solution`
+* coarsening operator
+* refinement operator (interpolation)
+
+The last two steps will require the use of the `mapFields` utility in OpenFOAM and may require some tweaking to work out.
+
+``` {.python file=pintFoam/model.py}
+<<pintfoam-vector>>
+<<pintfoam-solution>>
+```
+
+## Vector
+
+The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
+
+``` {.python #pintfoam-vector}
+ 
 ```
 
 # Appendix A: Utils
