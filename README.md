@@ -6,6 +6,7 @@ author: Johan Hidding
 Aim: simulate the turbulent flow past a cylinder in OpenFOAM and parallise with Parareal.
 
 Steps:
+
 1. Follow the [tutorial](https://wiki.openfoam.com/Vortex_shedding_by_Joel_Guerrero_2D) at [Wolf Dynamics](http://www.wolfdynamics.com/wiki/T5_2D_cylinder.pdf), supplementary material: [vortex_shedding.tar.gz](http://www.wolfdynamics.com/wiki/vortex_shedding.tar.gz).
 2. Run tutorial straight from Python using pyFOAM.
 3. Run parallel-in-time using Parareal in Python with Noodles.
@@ -119,7 +120,15 @@ The last two steps will require the use of the `mapFields` utility in OpenFOAM a
 The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
 
 ``` {.python #pintfoam-vector}
- 
+from typing import NamedTuple
+from paranoodles import abstract
+from pathlib import Path
+
+class Vector(abstract.Vector, NamedTuple):
+    run_directory: Path
+    time: int
+    
+    <<pintfoam-vector-methods>>
 ```
 
 # Appendix A: Utils
