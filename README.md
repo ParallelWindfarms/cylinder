@@ -110,25 +110,162 @@ We need to define the following:
 
 The last two steps will require the use of the `mapFields` utility in OpenFOAM and may require some tweaking to work out.
 
-``` {.python file=pintFoam/model.py}
-<<pintfoam-vector>>
-<<pintfoam-solution>>
-```
-
 ## Vector
 
-The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
+``` {.python file=pintFoam/vector.py}
+import numpy as np
+import operator
+
+from typing import NamedTuple
+from pathlib import Path
+from uuid import uuid4
+from shutil import copytree, rmtree
+
+from .utils import pushd
+
+from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
+from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
+from PyFoam.Execution.UtilityRunner import UtilityRunner
+
+<<base-case>>
+<<pintfoam-vector>>
+<<pintfoam-set-fields>>
+```
+
+The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame. 
+
+
+### Base case
+We will operate on a `Vector`, the same way everything is done in OpenFOAM. Copy, paste and edit. This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory, namely `0`.
+
+``` {.python #base-case}
+class BaseCase(NamedTuple):
+    """Base case is a cleaned version of the system. If it contains any fields,
+    it will only be the `0` time. Any field that is copied for manipulation will
+    do so on top of an available base case in the `0` slot."""
+    root: Path
+    case: str
+
+    @property
+    def path(self):
+        return self.root / self.case
+
+    def new_vector(self, name=None):
+        """Creates new `Vector` using this base case."""
+        new_case = name or uuid4().hex
+        new_path = self.root / new_case
+        if not new_path.exists():
+            copytree(self.path, new_path)
+        return Vector(self, new_case, 0)
+
+    def all_vector_paths(self):
+        """Iterates all sub-directories in the root."""
+        return (x for x in self.root.iterdir()
+                if x.is_dir() and x.name != self.case)
+
+    def clean(self):
+        """Deletes all vectors of this base-case."""
+        for path in self.all_vector_paths():
+            rmtree(path)
+```
+
+If no name is given to a new vector, a random one is generated.
+
+### Retrieving files and time directories
+Note that the `BaseCase` has a property `path`. The same property will be defined in `Vector`. We can use this common property to retrieve a `SolutionDirectory`, `ParameterFile` or `TimeDirectory`.
 
 ``` {.python #pintfoam-vector}
-from typing import NamedTuple
-from paranoodles import abstract
-from pathlib import Path
+def solution_directory(case):
+    return SolutionDirectory(case.path)
 
-class Vector(abstract.Vector, NamedTuple):
-    run_directory: Path
+
+def parameter_file(case, relative_path):
+    return ParsedParameterFile(case.path / relative_path)
+
+
+def time_directory(case):
+    return solution_directory(case)[case.time]
+```
+
+### Vector
+
+``` {.python #pintfoam-vector}
+class Vector(NamedTuple):
+    base: BaseCase
+    case: str
     time: int
-    
-    <<pintfoam-vector-methods>>
+
+    <<pintfoam-vector-properties>>
+    <<pintfoam-vector-operate>>
+    <<pintfoam-vector-operators>>
+```
+
+From a vector we can extract a file path pointing to the specified time slot, list the containing files and read out `internalField` from any of those files.
+
+``` {.python #pintfoam-vector-properties}
+@property
+def path(self):
+    return self.base.root / self.case
+
+@property
+def files(self):
+    return time_directory(self).getFiles()    
+
+def internalField(self, key):
+    return np.array(time_directory(self)[key] \
+        .getContent().content['internalField'])
+```
+
+Applying an operator to a vector follows a generic recepy:
+
+``` {.python #pintfoam-vector-operate}
+def _operate_vec_vec(self, other: Vector, op):
+    x = self.base.new_vector()
+    for f in self.files:
+        a_f = self.internalField(f)
+        b_f = other.internalField(f)
+        x_content = time_directory(x)[f].getContent()
+        x_f = x_content.content['internalField'].val[:] = op(a_f, b_f)
+        x_content.writeFile()
+    return x
+
+def _operate_vec_scalar(self, s: float, op):
+    x = self.base.new_vector()
+    for f in self.files:
+        a_f = self.internalField(f)
+        x_content = time_directory(x)[f].getContent()
+        x_f = x_content.content['internalField'].val[:] = op(a_f, s)
+        x_content.writeFile()
+    return x        
+```
+
+We now have the tools to define vector addition, subtraction and scaling.
+
+``` {.python #pintfoam-vector-operators}
+def __sub__(self, other: Vector):
+    return self._operate_vec_vec(other, operator.sub)
+
+def __add__(self, other: Vector):
+    return self._operate_vec_vec(other, operator.add)
+
+def __mul__(self, scale: float):
+    return self._operate_vec_scalar(scale, operator.mul)
+```
+
+### `setFields` utility
+
+We may want to call `setFields` on our `Vector` to setup some test cases.
+
+``` {.python #pintfoam-set-fields}
+def setFields(v, *, defaultFieldValues, regions):
+    x = parameter_file(v, "system/setFieldsDict")
+    x['defaultFieldValues'] = defaultFieldValues
+    x['regions'] = regions
+    x.writeFile()
+
+    with pushd(v.path):
+        u = UtilityRunner(argv=['setFields'], silent=True)
+        u.start()
 ```
 
 # Appendix A: Utils
