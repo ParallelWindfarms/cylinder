@@ -10,7 +10,7 @@ def pushd(path):
     and get back to current dir at exit."""
     prev = Path.cwd()
     os.chdir(path)
-    
+
     try:
         yield
     finally:

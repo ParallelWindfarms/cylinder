@@ -132,7 +132,7 @@ from PyFoam.Execution.UtilityRunner import UtilityRunner
 <<pintfoam-set-fields>>
 ```
 
-The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame. 
+The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
 
 
 ### Base case
@@ -193,9 +193,10 @@ def time_directory(case):
 class Vector(NamedTuple):
     base: BaseCase
     case: str
-    time: int
+    time: str
 
     <<pintfoam-vector-properties>>
+    <<pintfoam-vector-clone>>
     <<pintfoam-vector-operate>>
     <<pintfoam-vector-operators>>
 ```
@@ -209,14 +210,27 @@ def path(self):
 
 @property
 def files(self):
-    return time_directory(self).getFiles()    
+    return time_directory(self).getFiles()
 
 def internalField(self, key):
     return np.array(time_directory(self)[key] \
         .getContent().content['internalField'])
 ```
 
-Applying an operator to a vector follows a generic recepy:
+We clone a vector by creating a new vector and copying internal fields.
+
+``` {.python #pintfoam-vector-clone}
+def clone(self):
+    x = self.base.new_vector()
+    for f in self.files:
+        r_f = self.internalField(f)
+        x_content = time_directory(x)[f].getContent()
+        x_content.content['internalField'].val[:] = r_f
+        x_content.writeFile()
+    return x
+```
+
+Applying an operator to a vector follows a generic recipe:
 
 ``` {.python #pintfoam-vector-operate}
 def _operate_vec_vec(self, other: Vector, op):
@@ -236,7 +250,7 @@ def _operate_vec_scalar(self, s: float, op):
         x_content = time_directory(x)[f].getContent()
         x_f = x_content.content['internalField'].val[:] = op(a_f, s)
         x_content.writeFile()
-    return x        
+    return x
 ```
 
 We now have the tools to define vector addition, subtraction and scaling.
@@ -268,6 +282,82 @@ def setFields(v, *, defaultFieldValues, regions):
         u.start()
 ```
 
+## Solution
+
+Remember, the definition of a `Solution`,
+
+``` {.python #abstract-types}
+Solution = Callable[[Vector, float, float], Vector]
+```
+
+meaning, we write a function taking a current state `Vector`, the time *now*, and the *target* time, returning a new `Vector`.
+
+``` {.python file=pintFoam/solution.py}
+from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
+from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
+
+from .vector import (Vector, parameter_file, solution_directory)
+
+<<pintfoam-epsilon>>
+<<pintfoam-solution>>
+```
+
+The solver will write directories with floating-point valued names. This is a very bad idea by the folks at OpenFOAM, but it is one we'll have to live with. Suppose you have a time-step of $0.1$, what will be the names of the directories if you integrate from $0$ to $0.5$?
+
+``` {.python session=0}
+[x * 0.1 for x in range(6)]
+```
+
+In Python 3.7, this gives `[0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5]`. Surely, if you give a time-step of $0.1$ to OpenFOAM, it will create a directory named `0.3` instead. We'll define the constant `epsilon` to aid us in identifying the correct state directory given a floating-point time.
+
+``` {.python #pintfoam-epsilon}
+epsilon = 1e-6
+```
+
+Our solution depends on the solver chosen and the given time-step:
+
+``` {.python #pintfoam-solution}
+def solution(solver: str, dt: float):
+    <<pintfoam-solution-function>>
+    return f
+```
+
+The solver clones a new vector, sets the `controlDict`, runs the solver and then creates a new vector representing the last time slice.
+
+``` {.python #pintfoam-solution-function}
+def f(x: Vector, t_0: float, t_1: float):
+    assert abs(float(x.time) - t_0) < epsilon, "Times should match."
+    y = x.clone()
+    <<set-control-dict>>
+    <<run-solver>>
+    <<return-result>>
+```
+
+### `controlDict`
+
+``` {.python #set-control-dict}
+controlDict = parameter_file(y, "system/controlDict")
+controlDict.content['startTime'] = t_0
+controlDict.content['endTime'] = t_1
+controlDict.content['deltaT'] = dt
+controlDict.writeFile()
+```
+
+### Run solver
+
+``` {.python #run-solver}
+run = AnalyzedRunner(StandardLogAnalyzer(), argv=[solver], silent=True)
+run.start()
+```
+
+### Return result
+
+``` {.python #return-result}
+sd = solution_directory(y)
+t1_str = sd.times[-1]
+return Vector(y.base, y.case, t1_str)
+```
+
 # Appendix A: Utils
 
 ``` {.python file=pintFoam/utils.py}
@@ -289,7 +379,7 @@ def pushd(path):
     and get back to current dir at exit."""
     prev = Path.cwd()
     os.chdir(path)
-    
+
     try:
         yield
     finally:

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Johan Hidding" />
+  <title>Flow past a cylinder and Parareal</title>
+  <style>
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <style>
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_CHTML-full" type="text/javascript"></script>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Dosis" rel="stylesheet">
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Flow past a cylinder and Parareal</h1>
+<p class="author">Johan Hidding</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#pyfoam">PyFOAM</a></li>
+<li><a href="#interface-with-paranoodles">Interface with ParaNoodles</a><ul>
+<li><a href="#vector">Vector</a></li>
+<li><a href="#solution">Solution</a></li>
+</ul></li>
+<li><a href="#appendix-a-utils">Appendix A: Utils</a><ul>
+<li><a href="#pushd"><code>pushd</code></a></li>
+</ul></li>
+</ul>
+</nav>
+<p>Aim: simulate the turbulent flow past a cylinder in OpenFOAM and parallise with Parareal.</p>
+<p>Steps:</p>
+<ol type="1">
+<li>Follow the <a href="https://wiki.openfoam.com/Vortex_shedding_by_Joel_Guerrero_2D">tutorial</a> at <a href="http://www.wolfdynamics.com/wiki/T5_2D_cylinder.pdf">Wolf Dynamics</a>, supplementary material: <a href="http://www.wolfdynamics.com/wiki/vortex_shedding.tar.gz">vortex_shedding.tar.gz</a>.</li>
+<li>Run tutorial straight from Python using pyFOAM.</li>
+<li>Run parallel-in-time using Parareal in Python with Noodles.</li>
+</ol>
+<figure>
+<img src="./figures/case-result.png" alt="" /><figcaption>Flow around cylinder with Reynold’s number 200.</figcaption>
+</figure>
+<p>To install the requirements, also clone <a href="https://github.com/ParallelWindfarms/paranoodles">ParaNoodles</a> and run <code>pip install .</code> from its project root. To install additional requirements, have OpenFOAM installed and:</p>
+<pre class="shell"><code>pip install -r requirements.txt</code></pre>
+<h3 id="pyfoam">PyFOAM</h3>
+<p>PyFOAM is not so well documented. For our application we’d like to do two things: modify the run-directory and run <code>icoFoam</code>. We’ll start with the following modules:</p>
+<ul>
+<li><code>PyFoam.Execution</code></li>
+<li><code>PyFoam.RunDictionary</code></li>
+<li><code>PyFoam.LogAnalysis</code></li>
+</ul>
+<p>The PyFAOM module comes with a lot of tools to analyse the logs that are being created so fanatically by the solvers.</p>
+<h4 id="running-elbow-example">Running <code>elbow</code> example</h4>
+<p>To run the “elbow” example:</p>
+<div class="noweb">
+<p>«elbow-example»=</p>
+</div>
+<div class="sourceCode" id="elbow-example"><pre class="sourceCode python"><code class="sourceCode python"><span id="elbow-example-1"><a href="#elbow-example-1"></a><span class="im">from</span> PyFoam.Execution.AnalyzedRunner <span class="im">import</span> AnalyzedRunner</span>
+<span id="elbow-example-2"><a href="#elbow-example-2"></a><span class="im">from</span> PyFoam.LogAnalysis.StandardLogAnalyzer <span class="im">import</span> StandardLogAnalyzer</span></code></pre></div>
+<p>The <code>AnalyzedRunner</code> runs a command and sends the results to an <code>Analyzer</code> object, all found in the <code>PyFoam.LogAnalysis</code> module, in this case the <code>StandardLogAnalyzer</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="im">from</span> pintFoam.utils <span class="im">import</span> pushd</span>
+<span id="cb2-4"><a href="#cb2-4"></a></span>
+<span id="cb2-5"><a href="#cb2-5"></a>path <span class="op">=</span> Path(<span class="st">&quot;./elbow&quot;</span>).absolute()</span>
+<span id="cb2-6"><a href="#cb2-6"></a>solver <span class="op">=</span> <span class="st">&quot;icoFoam&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="cf">with</span> pushd(path):</span>
+<span id="cb2-9"><a href="#cb2-9"></a>    run <span class="op">=</span> AnalyzedRunner(StandardLogAnalyzer(), argv<span class="op">=</span>[solver], silent<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-10"><a href="#cb2-10"></a>    run.start()</span></code></pre></div>
+<h4 id="get-results">Get results</h4>
+<p>All access to files goes through the <code>PyFoam.RunDictionary</code> submodule.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1"></a><span class="im">from</span> PyFoam.RunDictionary.SolutionDirectory <span class="im">import</span> SolutionDirectory</span>
+<span id="cb3-2"><a href="#cb3-2"></a>dire <span class="op">=</span> SolutionDirectory(path)</span></code></pre></div>
+<p>Query for the time slices,</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1"></a>dire.times</span></code></pre></div>
+<p>And read some result data,</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1"></a>p <span class="op">=</span> dire[<span class="dv">10</span>][<span class="st">&#39;p&#39;</span>].getContent()[<span class="st">&#39;internalField&#39;</span>]</span>
+<span id="cb5-2"><a href="#cb5-2"></a>np.array(p.val)</span></code></pre></div>
+<h4 id="clear-results">Clear results</h4>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1"></a>dire.clearResults()</span></code></pre></div>
+<h4 id="change-integration-interval-and-time-step">Change integration interval and time step</h4>
+<p>We’ll now access the <code>controlDict</code> file.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1"></a><span class="im">from</span> PyFoam.RunDictionary.ParsedParameterFile <span class="im">import</span> ParsedParameterFile</span>
+<span id="cb7-2"><a href="#cb7-2"></a>controlDict <span class="op">=</span> ParsedParameterFile(dire.controlDict())</span>
+<span id="cb7-3"><a href="#cb7-3"></a>controlDict.content</span></code></pre></div>
+<p>change the end time</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1"></a>controlDict[<span class="st">&#39;endTime&#39;</span>] <span class="op">=</span> <span class="dv">20</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>controlDict.writeFile()</span></code></pre></div>
+<h2 id="interface-with-paranoodles">Interface with ParaNoodles</h2>
+<p>We need to define the following:</p>
+<ul>
+<li><code>Vector</code></li>
+<li>fine <code>Solution</code></li>
+<li>coarse <code>Solution</code></li>
+<li>coarsening operator</li>
+<li>refinement operator (interpolation)</li>
+</ul>
+<p>The last two steps will require the use of the <code>mapFields</code> utility in OpenFOAM and may require some tweaking to work out.</p>
+<h3 id="vector">Vector</h3>
+<div class="noweb">
+<p>file: «pintFoam/vector.py»=</p>
+</div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="im">import</span> operator</span>
+<span id="cb9-3"><a href="#cb9-3"></a></span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="im">from</span> typing <span class="im">import</span> NamedTuple</span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="im">from</span> uuid <span class="im">import</span> uuid4</span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="im">from</span> shutil <span class="im">import</span> copytree, rmtree</span>
+<span id="cb9-8"><a href="#cb9-8"></a></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="im">from</span> .utils <span class="im">import</span> pushd</span>
+<span id="cb9-10"><a href="#cb9-10"></a></span>
+<span id="cb9-11"><a href="#cb9-11"></a><span class="im">from</span> PyFoam.RunDictionary.ParsedParameterFile <span class="im">import</span> ParsedParameterFile</span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="im">from</span> PyFoam.RunDictionary.SolutionDirectory <span class="im">import</span> SolutionDirectory</span>
+<span id="cb9-13"><a href="#cb9-13"></a><span class="im">from</span> PyFoam.Execution.UtilityRunner <span class="im">import</span> UtilityRunner</span>
+<span id="cb9-14"><a href="#cb9-14"></a></span>
+<span id="cb9-15"><a href="#cb9-15"></a><span class="op">&lt;&lt;</span>base<span class="op">-</span>case<span class="op">&gt;&gt;</span></span>
+<span id="cb9-16"><a href="#cb9-16"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">&gt;&gt;</span></span>
+<span id="cb9-17"><a href="#cb9-17"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span><span class="bu">set</span><span class="op">-</span>fields<span class="op">&gt;&gt;</span></span></code></pre></div>
+<p>The abstract <code>Vector</code> representing any single state in the simulation consists of a <code>RunDirectory</code> and a time-frame.</p>
+<h4 id="base-case">Base case</h4>
+<p>We will operate on a <code>Vector</code>, the same way everything is done in OpenFOAM. Copy, paste and edit. This is why for every <code>Vector</code> we define a <code>BaseCase</code> that is used to generate new vectors. The <code>BaseCase</code> should have only one time directory, namely <code>0</code>.</p>
+<div class="noweb">
+<p>«base-case»=</p>
+</div>
+<div class="sourceCode" id="base-case"><pre class="sourceCode python"><code class="sourceCode python"><span id="base-case-1"><a href="#base-case-1"></a><span class="kw">class</span> BaseCase(NamedTuple):</span>
+<span id="base-case-2"><a href="#base-case-2"></a>    <span class="co">&quot;&quot;&quot;Base case is a cleaned version of the system. If it contains any fields,</span></span>
+<span id="base-case-3"><a href="#base-case-3"></a><span class="co">    it will only be the `0` time. Any field that is copied for manipulation will</span></span>
+<span id="base-case-4"><a href="#base-case-4"></a><span class="co">    do so on top of an available base case in the `0` slot.&quot;&quot;&quot;</span></span>
+<span id="base-case-5"><a href="#base-case-5"></a>    root: Path</span>
+<span id="base-case-6"><a href="#base-case-6"></a>    case: <span class="bu">str</span></span>
+<span id="base-case-7"><a href="#base-case-7"></a></span>
+<span id="base-case-8"><a href="#base-case-8"></a>    <span class="at">@property</span></span>
+<span id="base-case-9"><a href="#base-case-9"></a>    <span class="kw">def</span> path(<span class="va">self</span>):</span>
+<span id="base-case-10"><a href="#base-case-10"></a>        <span class="cf">return</span> <span class="va">self</span>.root <span class="op">/</span> <span class="va">self</span>.case</span>
+<span id="base-case-11"><a href="#base-case-11"></a></span>
+<span id="base-case-12"><a href="#base-case-12"></a>    <span class="kw">def</span> new_vector(<span class="va">self</span>, name<span class="op">=</span><span class="va">None</span>):</span>
+<span id="base-case-13"><a href="#base-case-13"></a>        <span class="co">&quot;&quot;&quot;Creates new `Vector` using this base case.&quot;&quot;&quot;</span></span>
+<span id="base-case-14"><a href="#base-case-14"></a>        new_case <span class="op">=</span> name <span class="kw">or</span> uuid4().<span class="bu">hex</span></span>
+<span id="base-case-15"><a href="#base-case-15"></a>        new_path <span class="op">=</span> <span class="va">self</span>.root <span class="op">/</span> new_case</span>
+<span id="base-case-16"><a href="#base-case-16"></a>        <span class="cf">if</span> <span class="kw">not</span> new_path.exists():</span>
+<span id="base-case-17"><a href="#base-case-17"></a>            copytree(<span class="va">self</span>.path, new_path)</span>
+<span id="base-case-18"><a href="#base-case-18"></a>        <span class="cf">return</span> Vector(<span class="va">self</span>, new_case, <span class="dv">0</span>)</span>
+<span id="base-case-19"><a href="#base-case-19"></a></span>
+<span id="base-case-20"><a href="#base-case-20"></a>    <span class="kw">def</span> all_vector_paths(<span class="va">self</span>):</span>
+<span id="base-case-21"><a href="#base-case-21"></a>        <span class="co">&quot;&quot;&quot;Iterates all sub-directories in the root.&quot;&quot;&quot;</span></span>
+<span id="base-case-22"><a href="#base-case-22"></a>        <span class="cf">return</span> (x <span class="cf">for</span> x <span class="kw">in</span> <span class="va">self</span>.root.iterdir()</span>
+<span id="base-case-23"><a href="#base-case-23"></a>                <span class="cf">if</span> x.is_dir() <span class="kw">and</span> x.name <span class="op">!=</span> <span class="va">self</span>.case)</span>
+<span id="base-case-24"><a href="#base-case-24"></a></span>
+<span id="base-case-25"><a href="#base-case-25"></a>    <span class="kw">def</span> clean(<span class="va">self</span>):</span>
+<span id="base-case-26"><a href="#base-case-26"></a>        <span class="co">&quot;&quot;&quot;Deletes all vectors of this base-case.&quot;&quot;&quot;</span></span>
+<span id="base-case-27"><a href="#base-case-27"></a>        <span class="cf">for</span> path <span class="kw">in</span> <span class="va">self</span>.all_vector_paths():</span>
+<span id="base-case-28"><a href="#base-case-28"></a>            rmtree(path)</span></code></pre></div>
+<p>If no name is given to a new vector, a random one is generated.</p>
+<h4 id="retrieving-files-and-time-directories">Retrieving files and time directories</h4>
+<p>Note that the <code>BaseCase</code> has a property <code>path</code>. The same property will be defined in <code>Vector</code>. We can use this common property to retrieve a <code>SolutionDirectory</code>, <code>ParameterFile</code> or <code>TimeDirectory</code>.</p>
+<div class="noweb">
+<p>«pintfoam-vector»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-vector"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-1"><a href="#pintfoam-vector-1"></a><span class="kw">def</span> solution_directory(case):</span>
+<span id="pintfoam-vector-2"><a href="#pintfoam-vector-2"></a>    <span class="cf">return</span> SolutionDirectory(case.path)</span>
+<span id="pintfoam-vector-3"><a href="#pintfoam-vector-3"></a></span>
+<span id="pintfoam-vector-4"><a href="#pintfoam-vector-4"></a></span>
+<span id="pintfoam-vector-5"><a href="#pintfoam-vector-5"></a><span class="kw">def</span> parameter_file(case, relative_path):</span>
+<span id="pintfoam-vector-6"><a href="#pintfoam-vector-6"></a>    <span class="cf">return</span> ParsedParameterFile(case.path <span class="op">/</span> relative_path)</span>
+<span id="pintfoam-vector-7"><a href="#pintfoam-vector-7"></a></span>
+<span id="pintfoam-vector-8"><a href="#pintfoam-vector-8"></a></span>
+<span id="pintfoam-vector-9"><a href="#pintfoam-vector-9"></a><span class="kw">def</span> time_directory(case):</span>
+<span id="pintfoam-vector-10"><a href="#pintfoam-vector-10"></a>    <span class="cf">return</span> solution_directory(case)[case.time]</span></code></pre></div>
+<h4 id="vector-1">Vector</h4>
+<div class="noweb">
+<p>«pintfoam-vector»=+</p>
+</div>
+<div class="sourceCode" id="pintfoam-vector"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-1"><a href="#pintfoam-vector-1"></a><span class="kw">class</span> Vector(NamedTuple):</span>
+<span id="pintfoam-vector-2"><a href="#pintfoam-vector-2"></a>    base: BaseCase</span>
+<span id="pintfoam-vector-3"><a href="#pintfoam-vector-3"></a>    case: <span class="bu">str</span></span>
+<span id="pintfoam-vector-4"><a href="#pintfoam-vector-4"></a>    time: <span class="bu">str</span></span>
+<span id="pintfoam-vector-5"><a href="#pintfoam-vector-5"></a></span>
+<span id="pintfoam-vector-6"><a href="#pintfoam-vector-6"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>properties<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-vector-7"><a href="#pintfoam-vector-7"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>clone<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-vector-8"><a href="#pintfoam-vector-8"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>operate<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-vector-9"><a href="#pintfoam-vector-9"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>operators<span class="op">&gt;&gt;</span></span></code></pre></div>
+<p>From a vector we can extract a file path pointing to the specified time slot, list the containing files and read out <code>internalField</code> from any of those files.</p>
+<div class="noweb">
+<p>«pintfoam-vector-properties»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-vector-properties"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-properties-1"><a href="#pintfoam-vector-properties-1"></a><span class="at">@property</span></span>
+<span id="pintfoam-vector-properties-2"><a href="#pintfoam-vector-properties-2"></a><span class="kw">def</span> path(<span class="va">self</span>):</span>
+<span id="pintfoam-vector-properties-3"><a href="#pintfoam-vector-properties-3"></a>    <span class="cf">return</span> <span class="va">self</span>.base.root <span class="op">/</span> <span class="va">self</span>.case</span>
+<span id="pintfoam-vector-properties-4"><a href="#pintfoam-vector-properties-4"></a></span>
+<span id="pintfoam-vector-properties-5"><a href="#pintfoam-vector-properties-5"></a><span class="at">@property</span></span>
+<span id="pintfoam-vector-properties-6"><a href="#pintfoam-vector-properties-6"></a><span class="kw">def</span> files(<span class="va">self</span>):</span>
+<span id="pintfoam-vector-properties-7"><a href="#pintfoam-vector-properties-7"></a>    <span class="cf">return</span> time_directory(<span class="va">self</span>).getFiles()</span>
+<span id="pintfoam-vector-properties-8"><a href="#pintfoam-vector-properties-8"></a></span>
+<span id="pintfoam-vector-properties-9"><a href="#pintfoam-vector-properties-9"></a><span class="kw">def</span> internalField(<span class="va">self</span>, key):</span>
+<span id="pintfoam-vector-properties-10"><a href="#pintfoam-vector-properties-10"></a>    <span class="cf">return</span> np.array(time_directory(<span class="va">self</span>)[key] <span class="op">\</span></span>
+<span id="pintfoam-vector-properties-11"><a href="#pintfoam-vector-properties-11"></a>        .getContent().content[<span class="st">&#39;internalField&#39;</span>])</span></code></pre></div>
+<p>We clone a vector by creating a new vector and copying internal fields.</p>
+<div class="noweb">
+<p>«pintfoam-vector-clone»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-vector-clone"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-clone-1"><a href="#pintfoam-vector-clone-1"></a><span class="kw">def</span> clone(<span class="va">self</span>):</span>
+<span id="pintfoam-vector-clone-2"><a href="#pintfoam-vector-clone-2"></a>    x <span class="op">=</span> <span class="va">self</span>.base.new_vector()</span>
+<span id="pintfoam-vector-clone-3"><a href="#pintfoam-vector-clone-3"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
+<span id="pintfoam-vector-clone-4"><a href="#pintfoam-vector-clone-4"></a>        r_f <span class="op">=</span> <span class="va">self</span>.internalField(f)</span>
+<span id="pintfoam-vector-clone-5"><a href="#pintfoam-vector-clone-5"></a>        x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-clone-6"><a href="#pintfoam-vector-clone-6"></a>        x_content.content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> r_f</span>
+<span id="pintfoam-vector-clone-7"><a href="#pintfoam-vector-clone-7"></a>        x_content.writeFile()</span>
+<span id="pintfoam-vector-clone-8"><a href="#pintfoam-vector-clone-8"></a>    <span class="cf">return</span> x</span></code></pre></div>
+<p>Applying an operator to a vector follows a generic recipe:</p>
+<div class="noweb">
+<p>«pintfoam-vector-operate»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-vector-operate"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-operate-1"><a href="#pintfoam-vector-operate-1"></a><span class="kw">def</span> _operate_vec_vec(<span class="va">self</span>, other: Vector, op):</span>
+<span id="pintfoam-vector-operate-2"><a href="#pintfoam-vector-operate-2"></a>    x <span class="op">=</span> <span class="va">self</span>.base.new_vector()</span>
+<span id="pintfoam-vector-operate-3"><a href="#pintfoam-vector-operate-3"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
+<span id="pintfoam-vector-operate-4"><a href="#pintfoam-vector-operate-4"></a>        a_f <span class="op">=</span> <span class="va">self</span>.internalField(f)</span>
+<span id="pintfoam-vector-operate-5"><a href="#pintfoam-vector-operate-5"></a>        b_f <span class="op">=</span> other.internalField(f)</span>
+<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6"></a>        x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7"></a>        x_f <span class="op">=</span> x_content.content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(a_f, b_f)</span>
+<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8"></a>        x_content.writeFile()</span>
+<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9"></a>    <span class="cf">return</span> x</span>
+<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10"></a></span>
+<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11"></a><span class="kw">def</span> _operate_vec_scalar(<span class="va">self</span>, s: <span class="bu">float</span>, op):</span>
+<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12"></a>    x <span class="op">=</span> <span class="va">self</span>.base.new_vector()</span>
+<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
+<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14"></a>        a_f <span class="op">=</span> <span class="va">self</span>.internalField(f)</span>
+<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15"></a>        x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-operate-16"><a href="#pintfoam-vector-operate-16"></a>        x_f <span class="op">=</span> x_content.content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(a_f, s)</span>
+<span id="pintfoam-vector-operate-17"><a href="#pintfoam-vector-operate-17"></a>        x_content.writeFile()</span>
+<span id="pintfoam-vector-operate-18"><a href="#pintfoam-vector-operate-18"></a>    <span class="cf">return</span> x</span></code></pre></div>
+<p>We now have the tools to define vector addition, subtraction and scaling.</p>
+<div class="noweb">
+<p>«pintfoam-vector-operators»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-vector-operators"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-operators-1"><a href="#pintfoam-vector-operators-1"></a><span class="kw">def</span> <span class="fu">__sub__</span>(<span class="va">self</span>, other: Vector):</span>
+<span id="pintfoam-vector-operators-2"><a href="#pintfoam-vector-operators-2"></a>    <span class="cf">return</span> <span class="va">self</span>._operate_vec_vec(other, operator.sub)</span>
+<span id="pintfoam-vector-operators-3"><a href="#pintfoam-vector-operators-3"></a></span>
+<span id="pintfoam-vector-operators-4"><a href="#pintfoam-vector-operators-4"></a><span class="kw">def</span> <span class="fu">__add__</span>(<span class="va">self</span>, other: Vector):</span>
+<span id="pintfoam-vector-operators-5"><a href="#pintfoam-vector-operators-5"></a>    <span class="cf">return</span> <span class="va">self</span>._operate_vec_vec(other, operator.add)</span>
+<span id="pintfoam-vector-operators-6"><a href="#pintfoam-vector-operators-6"></a></span>
+<span id="pintfoam-vector-operators-7"><a href="#pintfoam-vector-operators-7"></a><span class="kw">def</span> <span class="fu">__mul__</span>(<span class="va">self</span>, scale: <span class="bu">float</span>):</span>
+<span id="pintfoam-vector-operators-8"><a href="#pintfoam-vector-operators-8"></a>    <span class="cf">return</span> <span class="va">self</span>._operate_vec_scalar(scale, operator.mul)</span></code></pre></div>
+<h4 id="setfields-utility"><code>setFields</code> utility</h4>
+<p>We may want to call <code>setFields</code> on our <code>Vector</code> to setup some test cases.</p>
+<div class="noweb">
+<p>«pintfoam-set-fields»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-set-fields"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-set-fields-1"><a href="#pintfoam-set-fields-1"></a><span class="kw">def</span> setFields(v, <span class="op">*</span>, defaultFieldValues, regions):</span>
+<span id="pintfoam-set-fields-2"><a href="#pintfoam-set-fields-2"></a>    x <span class="op">=</span> parameter_file(v, <span class="st">&quot;system/setFieldsDict&quot;</span>)</span>
+<span id="pintfoam-set-fields-3"><a href="#pintfoam-set-fields-3"></a>    x[<span class="st">&#39;defaultFieldValues&#39;</span>] <span class="op">=</span> defaultFieldValues</span>
+<span id="pintfoam-set-fields-4"><a href="#pintfoam-set-fields-4"></a>    x[<span class="st">&#39;regions&#39;</span>] <span class="op">=</span> regions</span>
+<span id="pintfoam-set-fields-5"><a href="#pintfoam-set-fields-5"></a>    x.writeFile()</span>
+<span id="pintfoam-set-fields-6"><a href="#pintfoam-set-fields-6"></a></span>
+<span id="pintfoam-set-fields-7"><a href="#pintfoam-set-fields-7"></a>    <span class="cf">with</span> pushd(v.path):</span>
+<span id="pintfoam-set-fields-8"><a href="#pintfoam-set-fields-8"></a>        u <span class="op">=</span> UtilityRunner(argv<span class="op">=</span>[<span class="st">&#39;setFields&#39;</span>], silent<span class="op">=</span><span class="va">True</span>)</span>
+<span id="pintfoam-set-fields-9"><a href="#pintfoam-set-fields-9"></a>        u.start()</span></code></pre></div>
+<h3 id="solution">Solution</h3>
+<p>Remember, the definition of a <code>Solution</code>,</p>
+<div class="noweb">
+<p>«abstract-types»=</p>
+</div>
+<div class="sourceCode" id="abstract-types"><pre class="sourceCode python"><code class="sourceCode python"><span id="abstract-types-1"><a href="#abstract-types-1"></a>Solution <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>, <span class="bu">float</span>], Vector]</span></code></pre></div>
+<p>meaning, we write a function taking a current state <code>Vector</code>, the time <em>now</em>, and the <em>target</em> time, returning a new <code>Vector</code>.</p>
+<div class="noweb">
+<p>file: «pintFoam/solution.py»=</p>
+</div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1"></a><span class="im">from</span> PyFoam.Execution.AnalyzedRunner <span class="im">import</span> AnalyzedRunner</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="im">from</span> PyFoam.LogAnalysis.StandardLogAnalyzer <span class="im">import</span> StandardLogAnalyzer</span>
+<span id="cb10-3"><a href="#cb10-3"></a></span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="im">from</span> .vector <span class="im">import</span> (Vector, parameter_file, solution_directory)</span>
+<span id="cb10-5"><a href="#cb10-5"></a></span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>epsilon<span class="op">&gt;&gt;</span></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">&gt;&gt;</span></span></code></pre></div>
+<p>The solver will write directories with floating-point valued names. This is a very bad idea by the folks at OpenFOAM, but it is one we’ll have to live with. Suppose you have a time-step of <span class="math inline">\(0.1\)</span>, what will be the names of the directories if you integrate from <span class="math inline">\(0\)</span> to <span class="math inline">\(0.5\)</span>?</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1"></a>[x <span class="op">*</span> <span class="fl">0.1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">6</span>)]</span></code></pre></div>
+<p>In Python 3.7, this gives <code>[0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5]</code>. Surely, if you give a time-step of <span class="math inline">\(0.1\)</span> to OpenFOAM, it will create a directory named <code>0.3</code> instead. We’ll define the constant <code>epsilon</code> to aid us in identifying the correct state directory given a floating-point time.</p>
+<div class="noweb">
+<p>«pintfoam-epsilon»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-epsilon"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-epsilon-1"><a href="#pintfoam-epsilon-1"></a>epsilon <span class="op">=</span> <span class="fl">1e-6</span></span></code></pre></div>
+<p>Our solution depends on the solver chosen and the given time-step:</p>
+<div class="noweb">
+<p>«pintfoam-solution»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-solution"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-solution-1"><a href="#pintfoam-solution-1"></a><span class="kw">def</span> solution(solver: <span class="bu">str</span>, dt: <span class="bu">float</span>):</span>
+<span id="pintfoam-solution-2"><a href="#pintfoam-solution-2"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">-</span>function<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-solution-3"><a href="#pintfoam-solution-3"></a>    <span class="cf">return</span> f</span></code></pre></div>
+<p>The solver clones a new vector, sets the <code>controlDict</code>, runs the solver and then creates a new vector representing the last time slice.</p>
+<div class="noweb">
+<p>«pintfoam-solution-function»=</p>
+</div>
+<div class="sourceCode" id="pintfoam-solution-function"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-solution-function-1"><a href="#pintfoam-solution-function-1"></a><span class="kw">def</span> f(x: Vector, t_0: <span class="bu">float</span>, t_1: <span class="bu">float</span>):</span>
+<span id="pintfoam-solution-function-2"><a href="#pintfoam-solution-function-2"></a>    <span class="cf">assert</span> <span class="bu">abs</span>(<span class="bu">float</span>(x.time) <span class="op">-</span> t_0) <span class="op">&lt;</span> epsilon, <span class="st">&quot;Times should match.&quot;</span></span>
+<span id="pintfoam-solution-function-3"><a href="#pintfoam-solution-function-3"></a>    y <span class="op">=</span> x.clone()</span>
+<span id="pintfoam-solution-function-4"><a href="#pintfoam-solution-function-4"></a>    <span class="op">&lt;&lt;</span><span class="bu">set</span><span class="op">-</span>control<span class="op">-</span><span class="bu">dict</span><span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-solution-function-5"><a href="#pintfoam-solution-function-5"></a>    <span class="op">&lt;&lt;</span>run<span class="op">-</span>solver<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-solution-function-6"><a href="#pintfoam-solution-function-6"></a>    <span class="op">&lt;&lt;</span><span class="cf">return</span><span class="op">-</span>result<span class="op">&gt;&gt;</span></span></code></pre></div>
+<h4 id="controldict"><code>controlDict</code></h4>
+<div class="noweb">
+<p>«set-control-dict»=</p>
+</div>
+<div class="sourceCode" id="set-control-dict"><pre class="sourceCode python"><code class="sourceCode python"><span id="set-control-dict-1"><a href="#set-control-dict-1"></a>controlDict <span class="op">=</span> parameter_file(y, <span class="st">&quot;system/controlDict&quot;</span>)</span>
+<span id="set-control-dict-2"><a href="#set-control-dict-2"></a>controlDict.content[<span class="st">&#39;startTime&#39;</span>] <span class="op">=</span> t_0</span>
+<span id="set-control-dict-3"><a href="#set-control-dict-3"></a>controlDict.content[<span class="st">&#39;endTime&#39;</span>] <span class="op">=</span> t_1</span>
+<span id="set-control-dict-4"><a href="#set-control-dict-4"></a>controlDict.content[<span class="st">&#39;deltaT&#39;</span>] <span class="op">=</span> dt</span>
+<span id="set-control-dict-5"><a href="#set-control-dict-5"></a>controlDict.writeFile()</span></code></pre></div>
+<h4 id="run-solver">Run solver</h4>
+<div class="noweb">
+<p>«run-solver»=</p>
+</div>
+<div class="sourceCode" id="run-solver"><pre class="sourceCode python"><code class="sourceCode python"><span id="run-solver-1"><a href="#run-solver-1"></a>run <span class="op">=</span> AnalyzedRunner(StandardLogAnalyzer(), argv<span class="op">=</span>[solver], silent<span class="op">=</span><span class="va">True</span>)</span>
+<span id="run-solver-2"><a href="#run-solver-2"></a>run.start()</span></code></pre></div>
+<h4 id="return-result">Return result</h4>
+<div class="noweb">
+<p>«return-result»=</p>
+</div>
+<div class="sourceCode" id="return-result"><pre class="sourceCode python"><code class="sourceCode python"><span id="return-result-1"><a href="#return-result-1"></a>sd <span class="op">=</span> solution_directory(y)</span>
+<span id="return-result-2"><a href="#return-result-2"></a>t1_str <span class="op">=</span> sd.times[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="return-result-3"><a href="#return-result-3"></a><span class="cf">return</span> Vector(y.base, y.case, t1_str)</span></code></pre></div>
+<h2 id="appendix-a-utils">Appendix A: Utils</h2>
+<div class="noweb">
+<p>file: «pintFoam/utils.py»=</p>
+</div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1"></a><span class="op">&lt;&lt;</span>push<span class="op">-</span><span class="bu">dir</span><span class="op">&gt;&gt;</span></span></code></pre></div>
+<h3 id="pushd"><code>pushd</code></h3>
+<p>I haven’t been able (with simple attempts) to run a case outside the definition directory. Similar to the <code>pushd</code> bash command, I define a little utility in Python:</p>
+<div class="noweb">
+<p>«push-dir»=</p>
+</div>
+<div class="sourceCode" id="push-dir"><pre class="sourceCode python"><code class="sourceCode python"><span id="push-dir-1"><a href="#push-dir-1"></a><span class="im">import</span> os</span>
+<span id="push-dir-2"><a href="#push-dir-2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="push-dir-3"><a href="#push-dir-3"></a><span class="im">from</span> contextlib <span class="im">import</span> contextmanager</span>
+<span id="push-dir-4"><a href="#push-dir-4"></a></span>
+<span id="push-dir-5"><a href="#push-dir-5"></a><span class="at">@contextmanager</span></span>
+<span id="push-dir-6"><a href="#push-dir-6"></a><span class="kw">def</span> pushd(path):</span>
+<span id="push-dir-7"><a href="#push-dir-7"></a>    <span class="co">&quot;&quot;&quot;Context manager to change directory to given path,</span></span>
+<span id="push-dir-8"><a href="#push-dir-8"></a><span class="co">    and get back to current dir at exit.&quot;&quot;&quot;</span></span>
+<span id="push-dir-9"><a href="#push-dir-9"></a>    prev <span class="op">=</span> Path.cwd()</span>
+<span id="push-dir-10"><a href="#push-dir-10"></a>    os.chdir(path)</span>
+<span id="push-dir-11"><a href="#push-dir-11"></a></span>
+<span id="push-dir-12"><a href="#push-dir-12"></a>    <span class="cf">try</span>:</span>
+<span id="push-dir-13"><a href="#push-dir-13"></a>        <span class="cf">yield</span></span>
+<span id="push-dir-14"><a href="#push-dir-14"></a>    <span class="cf">finally</span>:</span>
+<span id="push-dir-15"><a href="#push-dir-15"></a>        os.chdir(prev)</span></code></pre></div>
+</body>
+</html>

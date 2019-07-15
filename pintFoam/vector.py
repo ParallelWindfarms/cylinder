@@ -59,7 +59,7 @@ def time_directory(case):
 class Vector(NamedTuple):
     base: BaseCase
     case: str
-    time: int
+    time: str
 
     ## ------ begin <<pintfoam-vector-properties>>[0]
     @property
@@ -68,11 +68,21 @@ class Vector(NamedTuple):
     
     @property
     def files(self):
-        return time_directory(self).getFiles()    
+        return time_directory(self).getFiles()
     
     def internalField(self, key):
         return np.array(time_directory(self)[key] \
             .getContent().content['internalField'])
+    ## ------ end
+    ## ------ begin <<pintfoam-vector-clone>>[0]
+    def clone(self):
+        x = self.base.new_vector()
+        for f in self.files:
+            r_f = self.internalField(f)
+            x_content = time_directory(x)[f].getContent()
+            x_content.content['internalField'].val[:] = r_f
+            x_content.writeFile()
+        return x
     ## ------ end
     ## ------ begin <<pintfoam-vector-operate>>[0]
     def _operate_vec_vec(self, other: Vector, op):
@@ -92,7 +102,7 @@ class Vector(NamedTuple):
             x_content = time_directory(x)[f].getContent()
             x_f = x_content.content['internalField'].val[:] = op(a_f, s)
             x_content.writeFile()
-        return x        
+        return x
     ## ------ end
     ## ------ begin <<pintfoam-vector-operators>>[0]
     def __sub__(self, other: Vector):
