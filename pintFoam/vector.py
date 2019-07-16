@@ -1,8 +1,10 @@
 ## ------ language="Python" file="pintFoam/vector.py"
+from __future__ import annotations
+
 import numpy as np
 import operator
 
-from typing import NamedTuple
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from shutil import copytree, rmtree
@@ -14,7 +16,8 @@ from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 from PyFoam.Execution.UtilityRunner import UtilityRunner
 
 ## ------ begin <<base-case>>[0]
-class BaseCase(NamedTuple):
+@dataclass
+class BaseCase:
     """Base case is a cleaned version of the system. If it contains any fields,
     it will only be the `0` time. Any field that is copied for manipulation will
     do so on top of an available base case in the `0` slot."""
@@ -31,7 +34,7 @@ class BaseCase(NamedTuple):
         new_path = self.root / new_case
         if not new_path.exists():
             copytree(self.path, new_path)
-        return Vector(self, new_case, 0)
+        return Vector(self, new_case, "0")
 
     def all_vector_paths(self):
         """Iterates all sub-directories in the root."""
@@ -54,7 +57,8 @@ def time_directory(case):
     return solution_directory(case)[case.time]
 ## ------ end
 ## ------ begin <<pintfoam-vector>>[1]
-class Vector(NamedTuple):
+@dataclass
+class Vector:
     base: BaseCase
     case: str
     time: str
@@ -70,35 +74,40 @@ class Vector(NamedTuple):
     
     def internalField(self, key):
         return np.array(time_directory(self)[key] \
-            .getContent().content['internalField'])
+            .getContent()['internalField'].val)
     ## ------ end
     ## ------ begin <<pintfoam-vector-clone>>[0]
     def clone(self):
         x = self.base.new_vector()
-        for f in self.files:
-            r_f = self.internalField(f)
-            x_content = time_directory(x)[f].getContent()
-            x_content.content['internalField'].val[:] = r_f
-            x_content.writeFile()
+        x.time = self.time
+        rmtree(x.path/ x.time, ignore_errors=True)
+        copytree(self.path / self.time, x.path / x.time)
         return x
     ## ------ end
     ## ------ begin <<pintfoam-vector-operate>>[0]
     def _operate_vec_vec(self, other: Vector, op):
-        x = self.base.new_vector()
+        x = self.clone()
         for f in self.files:
-            a_f = self.internalField(f)
             b_f = other.internalField(f)
+            x_f = x.internalField(f)
             x_content = time_directory(x)[f].getContent()
-            x_f = x_content.content['internalField'].val[:] = op(a_f, b_f)
+    
+            if x_f.shape is ():
+                x_content['internalField'].val = op(x_f, b_f)
+            else:
+                x_content['internalField'].val[:] = op(x_f, b_f)
             x_content.writeFile()
         return x
     
     def _operate_vec_scalar(self, s: float, op):
-        x = self.base.new_vector()
+        x = self.clone()
         for f in self.files:
-            a_f = self.internalField(f)
+            x_f = self.internalField(f)
             x_content = time_directory(x)[f].getContent()
-            x_f = x_content.content['internalField'].val[:] = op(a_f, s)
+            if x_f.shape is ():
+                x_content['internalField'].val = op(x_f, s)
+            else:
+                x_content['internalField'].val[:] = op(x_f, s)
             x_content.writeFile()
         return x
     ## ------ end

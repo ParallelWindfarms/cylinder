@@ -92,10 +92,12 @@ The last two steps will require the use of the `mapFields` utility in OpenFOAM a
 ## Vector
 
 ``` {.python file=pintFoam/vector.py}
+from __future__ import annotations
+
 import numpy as np
 import operator
 
-from typing import NamedTuple
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from shutil import copytree, rmtree
@@ -118,7 +120,8 @@ The abstract `Vector` representing any single state in the simulation consists o
 We will operate on a `Vector`, the same way everything is done in OpenFOAM. Copy, paste and edit. This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory, namely `0`.
 
 ``` {.python #base-case}
-class BaseCase(NamedTuple):
+@dataclass
+class BaseCase:
     """Base case is a cleaned version of the system. If it contains any fields,
     it will only be the `0` time. Any field that is copied for manipulation will
     do so on top of an available base case in the `0` slot."""
@@ -135,7 +138,7 @@ class BaseCase(NamedTuple):
         new_path = self.root / new_case
         if not new_path.exists():
             copytree(self.path, new_path)
-        return Vector(self, new_case, 0)
+        return Vector(self, new_case, "0")
 
     def all_vector_paths(self):
         """Iterates all sub-directories in the root."""
@@ -167,7 +170,8 @@ def time_directory(case):
 ### Vector
 
 ``` {.python #pintfoam-vector}
-class Vector(NamedTuple):
+@dataclass
+class Vector:
     base: BaseCase
     case: str
     time: str
@@ -191,7 +195,7 @@ def files(self):
 
 def internalField(self, key):
     return np.array(time_directory(self)[key] \
-        .getContent().content['internalField'])
+        .getContent()['internalField'].val)
 ```
 
 We clone a vector by creating a new vector and copying internal fields.
@@ -199,11 +203,9 @@ We clone a vector by creating a new vector and copying internal fields.
 ``` {.python #pintfoam-vector-clone}
 def clone(self):
     x = self.base.new_vector()
-    for f in self.files:
-        r_f = self.internalField(f)
-        x_content = time_directory(x)[f].getContent()
-        x_content.content['internalField'].val[:] = r_f
-        x_content.writeFile()
+    x.time = self.time
+    rmtree(x.path/ x.time, ignore_errors=True)
+    copytree(self.path / self.time, x.path / x.time)
     return x
 ```
 
@@ -211,21 +213,28 @@ Applying an operator to a vector follows a generic recipe:
 
 ``` {.python #pintfoam-vector-operate}
 def _operate_vec_vec(self, other: Vector, op):
-    x = self.base.new_vector()
+    x = self.clone()
     for f in self.files:
-        a_f = self.internalField(f)
         b_f = other.internalField(f)
+        x_f = x.internalField(f)
         x_content = time_directory(x)[f].getContent()
-        x_f = x_content.content['internalField'].val[:] = op(a_f, b_f)
+
+        if x_f.shape is ():
+            x_content['internalField'].val = op(x_f, b_f)
+        else:
+            x_content['internalField'].val[:] = op(x_f, b_f)
         x_content.writeFile()
     return x
 
 def _operate_vec_scalar(self, s: float, op):
-    x = self.base.new_vector()
+    x = self.clone()
     for f in self.files:
-        a_f = self.internalField(f)
+        x_f = self.internalField(f)
         x_content = time_directory(x)[f].getContent()
-        x_f = x_content.content['internalField'].val[:] = op(a_f, s)
+        if x_f.shape is ():
+            x_content['internalField'].val = op(x_f, s)
+        else:
+            x_content['internalField'].val[:] = op(x_f, s)
         x_content.writeFile()
     return x
 ```
@@ -274,6 +283,7 @@ from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
 from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
 
 from .vector import (Vector, parameter_file, solution_directory)
+from .utils import pushd
 
 <<pintfoam-epsilon>>
 <<pintfoam-solution>>
@@ -301,7 +311,7 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float):
 The solver clones a new vector, sets the `controlDict`, runs the solver and then creates a new vector representing the last time slice.
 
 ``` {.python #pintfoam-solution-function}
-assert abs(float(x.time) - t_0) < epsilon, "Times should match."
+assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone()
 <<set-control-dict>>
 <<run-solver>>
@@ -315,14 +325,16 @@ controlDict = parameter_file(y, "system/controlDict")
 controlDict.content['startTime'] = t_0
 controlDict.content['endTime'] = t_1
 controlDict.content['deltaT'] = dt
+controlDict.content['writeInterval'] = dt
 controlDict.writeFile()
 ```
 
 ### Run solver
 
 ``` {.python #run-solver}
-run = AnalyzedRunner(StandardLogAnalyzer(), argv=[solver], silent=True)
-run.start()
+with pushd(y.path):
+    run = AnalyzedRunner(StandardLogAnalyzer(), argv=[solver], silent=True)
+    run.start()
 ```
 
 ### Return result
@@ -335,14 +347,47 @@ return Vector(y.base, y.case, t1_str)
 
 # Running Parareal
 
-``` {.python file=pintFoam/run.py}
+``` {.python file=run.py}
+import numpy as np
+
 import noodles
 from noodles.draw_workflow import draw_workflow
+from noodles.run.threading.vanilla import run_parallel
+from noodles.run.process import run_process
+from noodles import serial
+from paranoodles import tabulate, parareal
 
-from paranoodles.parareal import \
-    ( parareal )
+from pintFoam.vector import BaseCase
+from pintFoam.run import (coarse, fine, registry)
+from pathlib import Path
 
-from .vector import BaseCase
+
+def paint(node, name):
+    if name == "coarse":
+        node.attr["fillcolor"] = "#cccccc"
+    elif name == "fine":
+        node.attr["fillcolor"] = "#88ff88"
+    else:
+        node.attr["fillcolor"] = "#ffffff"
+
+if __name__ == "__main__":
+    t = np.linspace(0.0, 1.0, 6)
+    base_case = BaseCase(Path("data/c1").resolve(), "baseCase")
+
+    y = noodles.gather(*tabulate(coarse, base_case.new_vector(), t))
+    s = noodles.gather(*parareal(fine, coarse)(y, t))
+
+    # draw_workflow("wf.svg", noodles.get_workflow(s), paint)
+    result = run_process(s, n_processes=4, registry=registry)
+
+    print(result)
+# base_case.clean()
+```
+
+``` {.python file=pintFoam/run.py}
+import noodles
+from noodles import serial
+
 from .solution import foam
 
 @noodles.schedule
@@ -353,19 +398,27 @@ def fine(x, t_0, t_1):
 def coarse(x, t_0, t_1):
     return foam("icoFoam", 0.2, x, t_0, t_1)
 
-def paint(node, name):
-    if name == "coarse":
-        node.attr["fillcolor"] = "#cccccc"
-    elif name == "fine":
-        node.attr["fillcolor"] = "#88ff88"
-    else:
-        node.attr["fillcolor"] = "#ffffff"
+def registry():
+    return serial.base() + serial.numpy()
 ```
 
 # Appendix A: Utils
 
 ``` {.python file=pintFoam/utils.py}
 <<push-dir>>
+```
+
+## Cleaning up
+
+``` {.python file=pintFoam/clean.py}
+import sys
+from pathlib import Path
+from .vector import BaseCase
+
+if __name__ == "__main__":
+    target = sys.argv[1]
+    base_case = sys.argv[2]
+    BaseCase(Path(target), base_case).clean()
 ```
 
 ## `pushd`
