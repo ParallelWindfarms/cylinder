@@ -47,10 +47,8 @@ class BaseCase(NamedTuple):
 def solution_directory(case):
     return SolutionDirectory(case.path)
 
-
 def parameter_file(case, relative_path):
     return ParsedParameterFile(case.path / relative_path)
-
 
 def time_directory(case):
     return solution_directory(case)[case.time]
