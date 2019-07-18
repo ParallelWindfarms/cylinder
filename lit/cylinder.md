@@ -272,7 +272,7 @@ def setFields(v, *, defaultFieldValues, regions):
 
 Remember, the definition of a `Solution`,
 
-``` {.python #abstract-types}
+``` {.python}
 Solution = Callable[[Vector, float, float], Vector]
 ```
 
