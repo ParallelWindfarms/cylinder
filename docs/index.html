@@ -600,8 +600,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="pintfoam-vector-properties-7"><a href="#pintfoam-vector-properties-7"></a>    <span class="cf">return</span> time_directory(<span class="va">self</span>).getFiles()</span>
 <span id="pintfoam-vector-properties-8"><a href="#pintfoam-vector-properties-8"></a></span>
 <span id="pintfoam-vector-properties-9"><a href="#pintfoam-vector-properties-9"></a><span class="kw">def</span> internalField(<span class="va">self</span>, key):</span>
-<span id="pintfoam-vector-properties-10"><a href="#pintfoam-vector-properties-10"></a>    <span class="cf">return</span> np.array(time_directory(<span class="va">self</span>)[key] <span class="op">\</span></span>
-<span id="pintfoam-vector-properties-11"><a href="#pintfoam-vector-properties-11"></a>        .getContent()[<span class="st">&#39;internalField&#39;</span>].val)</span></code></pre></div>
+<span id="pintfoam-vector-properties-10"><a href="#pintfoam-vector-properties-10"></a>    <span class="cf">return</span> time_directory(<span class="va">self</span>)[key] <span class="op">\</span></span>
+<span id="pintfoam-vector-properties-11"><a href="#pintfoam-vector-properties-11"></a>        .getContent()[<span class="st">&#39;internalField&#39;</span>]</span></code></pre></div>
 <p>We clone a vector by creating a new vector and copying internal fields.</p>
 <div class="noweb">
 <p>«pintfoam-vector-clone»=</p>
@@ -617,30 +617,38 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>«pintfoam-vector-operate»=</p>
 </div>
 <div class="sourceCode" id="pintfoam-vector-operate"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-operate-1"><a href="#pintfoam-vector-operate-1"></a><span class="kw">def</span> _operate_vec_vec(<span class="va">self</span>, other: Vector, op):</span>
-<span id="pintfoam-vector-operate-2"><a href="#pintfoam-vector-operate-2"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
-<span id="pintfoam-vector-operate-3"><a href="#pintfoam-vector-operate-3"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
+<span id="pintfoam-vector-operate-2"><a href="#pintfoam-vector-operate-2"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
+<span id="pintfoam-vector-operate-3"><a href="#pintfoam-vector-operate-3"></a>        a_f <span class="op">=</span> <span class="va">self</span>.internalField(f)</span>
 <span id="pintfoam-vector-operate-4"><a href="#pintfoam-vector-operate-4"></a>        b_f <span class="op">=</span> other.internalField(f)</span>
-<span id="pintfoam-vector-operate-5"><a href="#pintfoam-vector-operate-5"></a>        x_f <span class="op">=</span> x.internalField(f)</span>
-<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6"></a>        x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
-<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7"></a></span>
-<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8"></a>        <span class="cf">if</span> x_f.shape <span class="kw">is</span> ():</span>
-<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val <span class="op">=</span> op(x_f, b_f)</span>
-<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10"></a>        <span class="cf">else</span>:</span>
-<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(x_f, b_f)</span>
-<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12"></a>        x_content.writeFile()</span>
-<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13"></a>    <span class="cf">return</span> x</span>
-<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14"></a></span>
-<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15"></a><span class="kw">def</span> _operate_vec_scalar(<span class="va">self</span>, s: <span class="bu">float</span>, op):</span>
-<span id="pintfoam-vector-operate-16"><a href="#pintfoam-vector-operate-16"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
-<span id="pintfoam-vector-operate-17"><a href="#pintfoam-vector-operate-17"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
-<span id="pintfoam-vector-operate-18"><a href="#pintfoam-vector-operate-18"></a>        x_f <span class="op">=</span> <span class="va">self</span>.internalField(f)</span>
-<span id="pintfoam-vector-operate-19"><a href="#pintfoam-vector-operate-19"></a>        x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
-<span id="pintfoam-vector-operate-20"><a href="#pintfoam-vector-operate-20"></a>        <span class="cf">if</span> x_f.shape <span class="kw">is</span> ():</span>
-<span id="pintfoam-vector-operate-21"><a href="#pintfoam-vector-operate-21"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val <span class="op">=</span> op(x_f, s)</span>
-<span id="pintfoam-vector-operate-22"><a href="#pintfoam-vector-operate-22"></a>        <span class="cf">else</span>:</span>
-<span id="pintfoam-vector-operate-23"><a href="#pintfoam-vector-operate-23"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(x_f, s)</span>
-<span id="pintfoam-vector-operate-24"><a href="#pintfoam-vector-operate-24"></a>        x_content.writeFile()</span>
-<span id="pintfoam-vector-operate-25"><a href="#pintfoam-vector-operate-25"></a>    <span class="cf">return</span> x</span></code></pre></div>
+<span id="pintfoam-vector-operate-5"><a href="#pintfoam-vector-operate-5"></a></span>
+<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6"></a>        <span class="cf">if</span> a_f.uniform <span class="kw">and</span> b_f.uniform:</span>
+<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7"></a>            x <span class="op">=</span> <span class="va">self</span>.clone()</span>
+<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8"></a>            x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val <span class="op">=</span> op(a_f.val, b_f.val)</span>
+<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10"></a>        <span class="cf">elif</span> a_f.uniform:</span>
+<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11"></a>            x <span class="op">=</span> other.clone()</span>
+<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12"></a>            x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(np.array(a_f.val), np.array(b_f.val))</span>
+<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14"></a>        <span class="cf">else</span>:</span>
+<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15"></a>            x <span class="op">=</span> <span class="va">self</span>.clone()</span>
+<span id="pintfoam-vector-operate-16"><a href="#pintfoam-vector-operate-16"></a>            x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-operate-17"><a href="#pintfoam-vector-operate-17"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(np.array(a_f.val), np.array(b_f.val))</span>
+<span id="pintfoam-vector-operate-18"><a href="#pintfoam-vector-operate-18"></a></span>
+<span id="pintfoam-vector-operate-19"><a href="#pintfoam-vector-operate-19"></a>        x_content.writeFile()</span>
+<span id="pintfoam-vector-operate-20"><a href="#pintfoam-vector-operate-20"></a></span>
+<span id="pintfoam-vector-operate-21"><a href="#pintfoam-vector-operate-21"></a>    <span class="cf">return</span> x</span>
+<span id="pintfoam-vector-operate-22"><a href="#pintfoam-vector-operate-22"></a></span>
+<span id="pintfoam-vector-operate-23"><a href="#pintfoam-vector-operate-23"></a><span class="kw">def</span> _operate_vec_scalar(<span class="va">self</span>, s: <span class="bu">float</span>, op):</span>
+<span id="pintfoam-vector-operate-24"><a href="#pintfoam-vector-operate-24"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
+<span id="pintfoam-vector-operate-25"><a href="#pintfoam-vector-operate-25"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.files:</span>
+<span id="pintfoam-vector-operate-26"><a href="#pintfoam-vector-operate-26"></a>        x_f <span class="op">=</span> <span class="va">self</span>.internalField(f)</span>
+<span id="pintfoam-vector-operate-27"><a href="#pintfoam-vector-operate-27"></a>        x_content <span class="op">=</span> time_directory(x)[f].getContent()</span>
+<span id="pintfoam-vector-operate-28"><a href="#pintfoam-vector-operate-28"></a>        <span class="cf">if</span> x_f.shape <span class="kw">is</span> ():</span>
+<span id="pintfoam-vector-operate-29"><a href="#pintfoam-vector-operate-29"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val <span class="op">=</span> op(x_f, s)</span>
+<span id="pintfoam-vector-operate-30"><a href="#pintfoam-vector-operate-30"></a>        <span class="cf">else</span>:</span>
+<span id="pintfoam-vector-operate-31"><a href="#pintfoam-vector-operate-31"></a>            x_content[<span class="st">&#39;internalField&#39;</span>].val[:] <span class="op">=</span> op(x_f, s)</span>
+<span id="pintfoam-vector-operate-32"><a href="#pintfoam-vector-operate-32"></a>        x_content.writeFile()</span>
+<span id="pintfoam-vector-operate-33"><a href="#pintfoam-vector-operate-33"></a>    <span class="cf">return</span> x</span></code></pre></div>
 <p>We now have the tools to define vector addition, subtraction and scaling.</p>
 <div class="noweb">
 <p>«pintfoam-vector-operators»=</p>
@@ -738,34 +746,36 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb21-4"><a href="#cb21-4"></a><span class="im">from</span> noodles.draw_workflow <span class="im">import</span> draw_workflow</span>
 <span id="cb21-5"><a href="#cb21-5"></a><span class="im">from</span> noodles.run.threading.vanilla <span class="im">import</span> run_parallel</span>
 <span id="cb21-6"><a href="#cb21-6"></a><span class="im">from</span> noodles.run.process <span class="im">import</span> run_process</span>
-<span id="cb21-7"><a href="#cb21-7"></a><span class="im">from</span> noodles <span class="im">import</span> serial</span>
-<span id="cb21-8"><a href="#cb21-8"></a><span class="im">from</span> paranoodles <span class="im">import</span> tabulate, parareal</span>
-<span id="cb21-9"><a href="#cb21-9"></a></span>
-<span id="cb21-10"><a href="#cb21-10"></a><span class="im">from</span> pintFoam.vector <span class="im">import</span> BaseCase</span>
-<span id="cb21-11"><a href="#cb21-11"></a><span class="im">from</span> pintFoam.run <span class="im">import</span> (coarse, fine, registry)</span>
-<span id="cb21-12"><a href="#cb21-12"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb21-13"><a href="#cb21-13"></a></span>
+<span id="cb21-7"><a href="#cb21-7"></a><span class="im">from</span> noodles.run.single.vanilla <span class="im">import</span> run_single</span>
+<span id="cb21-8"><a href="#cb21-8"></a><span class="im">from</span> noodles <span class="im">import</span> serial</span>
+<span id="cb21-9"><a href="#cb21-9"></a><span class="im">from</span> paranoodles <span class="im">import</span> tabulate, parareal</span>
+<span id="cb21-10"><a href="#cb21-10"></a></span>
+<span id="cb21-11"><a href="#cb21-11"></a><span class="im">from</span> pintFoam.vector <span class="im">import</span> BaseCase</span>
+<span id="cb21-12"><a href="#cb21-12"></a><span class="im">from</span> pintFoam.run <span class="im">import</span> (coarse, fine, registry)</span>
+<span id="cb21-13"><a href="#cb21-13"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb21-14"><a href="#cb21-14"></a></span>
-<span id="cb21-15"><a href="#cb21-15"></a><span class="kw">def</span> paint(node, name):</span>
-<span id="cb21-16"><a href="#cb21-16"></a>    <span class="cf">if</span> name <span class="op">==</span> <span class="st">&quot;coarse&quot;</span>:</span>
-<span id="cb21-17"><a href="#cb21-17"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#cccccc&quot;</span></span>
-<span id="cb21-18"><a href="#cb21-18"></a>    <span class="cf">elif</span> name <span class="op">==</span> <span class="st">&quot;fine&quot;</span>:</span>
-<span id="cb21-19"><a href="#cb21-19"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#88ff88&quot;</span></span>
-<span id="cb21-20"><a href="#cb21-20"></a>    <span class="cf">else</span>:</span>
-<span id="cb21-21"><a href="#cb21-21"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#ffffff&quot;</span></span>
-<span id="cb21-22"><a href="#cb21-22"></a></span>
-<span id="cb21-23"><a href="#cb21-23"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
-<span id="cb21-24"><a href="#cb21-24"></a>    t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, <span class="dv">6</span>)</span>
-<span id="cb21-25"><a href="#cb21-25"></a>    base_case <span class="op">=</span> BaseCase(Path(<span class="st">&quot;data/c1&quot;</span>).resolve(), <span class="st">&quot;baseCase&quot;</span>)</span>
-<span id="cb21-26"><a href="#cb21-26"></a></span>
-<span id="cb21-27"><a href="#cb21-27"></a>    y <span class="op">=</span> noodles.gather(<span class="op">*</span>tabulate(coarse, base_case.new_vector(), t))</span>
-<span id="cb21-28"><a href="#cb21-28"></a>    s <span class="op">=</span> noodles.gather(<span class="op">*</span>parareal(fine, coarse)(y, t))</span>
-<span id="cb21-29"><a href="#cb21-29"></a></span>
-<span id="cb21-30"><a href="#cb21-30"></a>    <span class="co"># draw_workflow(&quot;wf.svg&quot;, noodles.get_workflow(s), paint)</span></span>
-<span id="cb21-31"><a href="#cb21-31"></a>    result <span class="op">=</span> run_process(s, n_processes<span class="op">=</span><span class="dv">4</span>, registry<span class="op">=</span>registry)</span>
-<span id="cb21-32"><a href="#cb21-32"></a></span>
-<span id="cb21-33"><a href="#cb21-33"></a>    <span class="bu">print</span>(result)</span>
-<span id="cb21-34"><a href="#cb21-34"></a><span class="co"># base_case.clean()</span></span></code></pre></div>
+<span id="cb21-15"><a href="#cb21-15"></a></span>
+<span id="cb21-16"><a href="#cb21-16"></a><span class="kw">def</span> paint(node, name):</span>
+<span id="cb21-17"><a href="#cb21-17"></a>    <span class="cf">if</span> name <span class="op">==</span> <span class="st">&quot;coarse&quot;</span>:</span>
+<span id="cb21-18"><a href="#cb21-18"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#cccccc&quot;</span></span>
+<span id="cb21-19"><a href="#cb21-19"></a>    <span class="cf">elif</span> name <span class="op">==</span> <span class="st">&quot;fine&quot;</span>:</span>
+<span id="cb21-20"><a href="#cb21-20"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#88ff88&quot;</span></span>
+<span id="cb21-21"><a href="#cb21-21"></a>    <span class="cf">else</span>:</span>
+<span id="cb21-22"><a href="#cb21-22"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#ffffff&quot;</span></span>
+<span id="cb21-23"><a href="#cb21-23"></a></span>
+<span id="cb21-24"><a href="#cb21-24"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb21-25"><a href="#cb21-25"></a>    t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, <span class="dv">6</span>)</span>
+<span id="cb21-26"><a href="#cb21-26"></a>    base_case <span class="op">=</span> BaseCase(Path(<span class="st">&quot;data/c1&quot;</span>).resolve(), <span class="st">&quot;baseCase&quot;</span>)</span>
+<span id="cb21-27"><a href="#cb21-27"></a></span>
+<span id="cb21-28"><a href="#cb21-28"></a>    y <span class="op">=</span> noodles.gather(<span class="op">*</span>tabulate(coarse, base_case.new_vector(), t))</span>
+<span id="cb21-29"><a href="#cb21-29"></a>    s <span class="op">=</span> noodles.gather(<span class="op">*</span>parareal(fine, coarse)(y, t))</span>
+<span id="cb21-30"><a href="#cb21-30"></a></span>
+<span id="cb21-31"><a href="#cb21-31"></a>    <span class="co"># draw_workflow(&quot;wf.svg&quot;, noodles.get_workflow(s), paint)</span></span>
+<span id="cb21-32"><a href="#cb21-32"></a>    <span class="co">#result = run_process(s, n_processes=4, registry=registry)</span></span>
+<span id="cb21-33"><a href="#cb21-33"></a>    result <span class="op">=</span> run_single(s)</span>
+<span id="cb21-34"><a href="#cb21-34"></a></span>
+<span id="cb21-35"><a href="#cb21-35"></a>    <span class="bu">print</span>(result)</span>
+<span id="cb21-36"><a href="#cb21-36"></a><span class="co"># base_case.clean()</span></span></code></pre></div>
 <div class="noweb">
 <p>file: «pintFoam/run.py»=</p>
 </div>
