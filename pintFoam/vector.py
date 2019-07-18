@@ -67,14 +67,14 @@ class Vector:
     @property
     def path(self):
         return self.base.root / self.case
-    
+
     @property
     def files(self):
         return time_directory(self).getFiles()
-    
+
     def internalField(self, key):
-        return np.array(time_directory(self)[key] \
-            .getContent()['internalField'].val)
+        return time_directory(self)[key] \
+            .getContent()['internalField']
     ## ------ end
     ## ------ begin <<pintfoam-vector-clone>>[0]
     def clone(self):
@@ -86,19 +86,27 @@ class Vector:
     ## ------ end
     ## ------ begin <<pintfoam-vector-operate>>[0]
     def _operate_vec_vec(self, other: Vector, op):
-        x = self.clone()
         for f in self.files:
+            a_f = self.internalField(f)
             b_f = other.internalField(f)
-            x_f = x.internalField(f)
-            x_content = time_directory(x)[f].getContent()
-    
-            if x_f.shape is ():
-                x_content['internalField'].val = op(x_f, b_f)
+
+            if a_f.uniform and b_f.uniform:
+                x = self.clone()
+                x_content = time_directory(x)[f].getContent()
+                x_content['internalField'].val = op(a_f.val, b_f.val)
+            elif a_f.uniform:
+                x = other.clone()
+                x_content = time_directory(x)[f].getContent()
+                x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
             else:
-                x_content['internalField'].val[:] = op(x_f, b_f)
+                x = self.clone()
+                x_content = time_directory(x)[f].getContent()
+                x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
+
             x_content.writeFile()
+
         return x
-    
+
     def _operate_vec_scalar(self, s: float, op):
         x = self.clone()
         for f in self.files:
@@ -114,10 +122,10 @@ class Vector:
     ## ------ begin <<pintfoam-vector-operators>>[0]
     def __sub__(self, other: Vector):
         return self._operate_vec_vec(other, operator.sub)
-    
+
     def __add__(self, other: Vector):
         return self._operate_vec_vec(other, operator.add)
-    
+
     def __mul__(self, scale: float):
         return self._operate_vec_scalar(scale, operator.mul)
     ## ------ end

@@ -194,8 +194,8 @@ def files(self):
     return time_directory(self).getFiles()
 
 def internalField(self, key):
-    return np.array(time_directory(self)[key] \
-        .getContent()['internalField'].val)
+    return time_directory(self)[key] \
+        .getContent()['internalField']
 ```
 
 We clone a vector by creating a new vector and copying internal fields.
@@ -213,17 +213,25 @@ Applying an operator to a vector follows a generic recipe:
 
 ``` {.python #pintfoam-vector-operate}
 def _operate_vec_vec(self, other: Vector, op):
-    x = self.clone()
     for f in self.files:
+        a_f = self.internalField(f)
         b_f = other.internalField(f)
-        x_f = x.internalField(f)
-        x_content = time_directory(x)[f].getContent()
 
-        if x_f.shape is ():
-            x_content['internalField'].val = op(x_f, b_f)
+        if a_f.uniform and b_f.uniform:
+            x = self.clone()
+            x_content = time_directory(x)[f].getContent()
+            x_content['internalField'].val = op(a_f.val, b_f.val)
+        elif a_f.uniform:
+            x = other.clone()
+            x_content = time_directory(x)[f].getContent()
+            x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
         else:
-            x_content['internalField'].val[:] = op(x_f, b_f)
+            x = self.clone()
+            x_content = time_directory(x)[f].getContent()
+            x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
+
         x_content.writeFile()
+
     return x
 
 def _operate_vec_scalar(self, s: float, op):
@@ -354,6 +362,7 @@ import noodles
 from noodles.draw_workflow import draw_workflow
 from noodles.run.threading.vanilla import run_parallel
 from noodles.run.process import run_process
+from noodles.run.single.vanilla import run_single
 from noodles import serial
 from paranoodles import tabulate, parareal
 
@@ -378,7 +387,8 @@ if __name__ == "__main__":
     s = noodles.gather(*parareal(fine, coarse)(y, t))
 
     # draw_workflow("wf.svg", noodles.get_workflow(s), paint)
-    result = run_process(s, n_processes=4, registry=registry)
+    #result = run_process(s, n_processes=4, registry=registry)
+    result = run_single(s)
 
     print(result)
 # base_case.clean()

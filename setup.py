@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Setup script for ParaNoodles.
+Setup script for pintFoam.
 """
 
 from pathlib import Path
@@ -13,9 +13,9 @@ with (here / 'README.md').open(encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='ParaNoodles',
+    name='pintFoam',
     version='0.1',
-    description='Parallel-in-time integration for Python',
+    description='Parallel-in-time integration for OpenFOAM',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Johan Hidding',
