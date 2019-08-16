@@ -6,6 +6,8 @@ from noodles.draw_workflow import draw_workflow
 from noodles.run.threading.vanilla import run_parallel
 from noodles.run.process import run_process
 from noodles.run.single.vanilla import run_single
+from noodles.display.simple_nc import Display
+
 from noodles import serial
 from paranoodles import tabulate, parareal
 
@@ -30,8 +32,8 @@ if __name__ == "__main__":
     s = noodles.gather(*parareal(fine, coarse)(y, t))
 
     # draw_workflow("wf.svg", noodles.get_workflow(s), paint)
-    #result = run_process(s, n_processes=4, registry=registry)
-    result = run_single(s)
+    result = run_process(s, n_processes=4, registry=registry, verbose=True)
+    # result = run_single(s)
 
     print(result)
 # base_case.clean()

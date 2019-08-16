@@ -3,7 +3,7 @@ from __future__ import annotations  # enable self-reference in type annotations
 from typing import Callable
 from abc import (ABC, abstractmethod)
 
-## ------ begin <<abstract-types>>[1]
+## ------ begin <<abstract-types>>[0]
 class Vector(ABC):
     """Abstract base class for state variable of a problem.
     This should support simple arithmatic operations."""
@@ -25,10 +25,10 @@ class Vector(ABC):
     def __rmul__(self, other: float) -> Vector:
         return self * other
 ## ------ end
-## ------ begin <<abstract-types>>[2]
+## ------ begin <<abstract-types>>[1]
 Problem = Callable[[Vector, float], Vector]
 ## ------ end
-## ------ begin <<abstract-types>>[3]
+## ------ begin <<abstract-types>>[2]
 Solution = Callable[[Vector, float, float], Vector]
 ## ------ end
 ## ------ end
