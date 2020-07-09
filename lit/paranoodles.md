@@ -96,13 +96,13 @@ def iterate_solution(step: Solution, h: float) -> Solution:
         steps = np.arange(t_0, t_1, n + 1)
         for t_a, t_b in zip(steps[:-1], steps[1:])
             y = step(y, t_a, t_b)
-        return y         
+        return y
     return iter_step
 ```
 
 ## Example: damped harmonic oscillator
 
-The harmonic oscillator can model the movement of a pendulum or the vibration of a mass on a string. 
+The harmonic oscillator can model the movement of a pendulum or the vibration of a mass on a string.
 
 $$y'' + 2\zeta \omega_0 y' + \omega_0^2 y = 0,$$
 
@@ -125,7 +125,7 @@ def harmonic_oscillator(omega_0: float, zeta: float) -> Problem:
     def f(y, t):
         return np.r_[y[1], -2 * zeta * omega_0 * y[1] - omega_0**2 * y[0]]
     return f
-    
+
 <<harmonic-oscillator-solution>>
 ```
 
@@ -173,7 +173,7 @@ def tabulate(step: Solution, y_0: Vector, t: Array) -> Sequence[Vector]:
     point given in array `t`."""
     if isinstance(y_0, Array):
         return tabulate_np(step, y_0, t)
-        
+
     y = [y_0]
     for i in range(1, t.size):
         y_i = step(y[i-1], t[i-1], t[i])
@@ -222,14 +222,14 @@ plt.legend()
 plt.savefig("harmonic.svg")
 ```
 
-![Damped harmonic oscillator](./harmonic.svg)
+![Damped harmonic oscillator](./img/harmonic.svg)
 
 # Parareal
 
 From Wikipedia:
 
 > Parareal solves an initial value problem of the form
-> 
+>
 > $$\dot{y}(t) = f(y(t), t), \quad y(t_0) = y_0 \quad \text{with} \quad t_0 \leq t \leq T.$$
 >
 > Here, the right hand side $f$ can correspond to the spatial discretization of a partial differential equation in a method of lines approach.
@@ -276,7 +276,7 @@ def parareal(coarse: Solution, fine: Solution):
         for i in range(1, m):
             <<parareal-core>>
         return y_n
-    
+
     return f
 ```
 
@@ -284,9 +284,13 @@ def parareal(coarse: Solution, fine: Solution):
 
 The way we implemented the `parareal` function is not very efficient. It's Python, there's a recursion in the dependency, so no way to sweeten it up with `numpy`. Suppose however, that the `fine` solution may take a while to compute, and we only use Python to steer the computation. How can we paralellise the implementation of `parareal`? The answer is: we don't need to! Noodles can do it for us.
 
-``` {.python #noodlify}
-import numpy as np
+``` {.python #import-noodles}
 import noodles
+```
+
+``` {.python #noodlify}
+<<import noodles>>
+import numpy as np
 from noodles.draw_workflow import draw_workflow
 
 from paranoodles.harmonic_oscillator import \
@@ -322,7 +326,7 @@ It doesn't really matter what the fine integrator does, since we won't run anyth
 
 ``` {.python #noodlify}
 y_euler = noodles.gather(
-    *tabulate(noodles.schedule(fine), [1.0, 0.0], t))
+    *tabulate(fine, [1.0, 0.0], t))
 ```
 
 We can draw the resulting workflow:
@@ -334,12 +338,12 @@ def paint(node, name):
     elif name == "fine":
         node.attr["fillcolor"] = "#88ff88"
     else:
-        node.attr["fillcolor"] = "#ffffff"        
- 
+        node.attr["fillcolor"] = "#ffffff"
+
 draw_workflow('seq-graph.svg', noodles.get_workflow(y_euler), paint)
 ```
 
-![Sequential integration](./seq-graph.svg){width=50%}
+![Sequential integration](./img/seq-graph.svg){width=50%}
 
 This workflow is entirely sequential, every step depending on the preceding one. Now for Parareal! We also define the `coarse` integrator.
 
@@ -352,17 +356,20 @@ def coarse(x, t_0, t_1):
 Parareal is initialised with the ODE integrated by the coarse integrator, just like we did before with the fine one.
 
 ``` {.python #noodlify}
-y_first = noodles.gather(*tabulate(noodles.schedule(coarse), [1.0, 0.0], t))
+y_first = noodles.gather(*tabulate(coarse, [1.0, 0.0], t))
 ```
 
 We can now perform a single iteration of Parareal to see what the workflow looks like:
 
 ``` {.python #noodlify}
 y_parareal = noodles.gather(*parareal(coarse, fine)(y_first, t))
+```
+
+``` {.python #noodlify}
 draw_workflow('parareal-graph.svg', noodles.get_workflow(y_parareal), paint)
 ```
 
-![Parareal iteration; the fine integrators (green) can be run in parallel.](./parareal-graph.svg)
+![Parareal iteration; the fine integrators (green) can be run in parallel.](./img/parareal-graph.svg)
 
 # Tests
 

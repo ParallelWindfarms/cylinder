@@ -1,4 +1,5 @@
-## ------ language="Python" file="paranoodles/forward_euler.py"
+# ~\~ language=Python filename=paranoodles/forward_euler.py
+# ~\~ begin <<lit/paranoodles.md|paranoodles/forward_euler.py>>[0]
 from .abstract import (Vector, Problem, Solution)
 
 def forward_euler(f: Problem) -> Solution:
@@ -6,4 +7,4 @@ def forward_euler(f: Problem) -> Solution:
         """Stepping function of Euler method."""
         return y + (t_1 - t_0) * f(y, t_0)
     return step
-## ------ end
+# ~\~ end

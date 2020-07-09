@@ -1,4 +1,5 @@
-## ------ language="Python" file="run.py"
+# ~\~ language=Python filename=run.py
+# ~\~ begin <<lit/cylinder.md|run.py>>[0]
 import numpy as np
 
 import noodles
@@ -37,4 +38,4 @@ if __name__ == "__main__":
 
     print(result)
 # base_case.clean()
-## ------ end
+# ~\~ end

@@ -1,4 +1,5 @@
-## ------ language="Python" file="paranoodles/parareal.py"
+# ~\~ language=Python filename=paranoodles/parareal.py
+# ~\~ begin <<lit/paranoodles.md|paranoodles/parareal.py>>[0]
 from .abstract import (Solution)
 
 def parareal(coarse: Solution, fine: Solution):
@@ -7,12 +8,12 @@ def parareal(coarse: Solution, fine: Solution):
         y_n = [None] * m
         y_n[0] = y[0]
         for i in range(1, m):
-            ## ------ begin <<parareal-core>>[0]
+            # ~\~ begin <<lit/paranoodles.md|parareal-core>>[0]
             y_n[i] = coarse(y_n[i-1], t[i-1], t[i]) \
                    + fine(y[i-1], t[i-1], t[i]) \
                    - coarse(y[i-1], t[i-1], t[i])
-            ## ------ end
+            # ~\~ end
         return y_n
-    
+
     return f
-## ------ end
+# ~\~ end

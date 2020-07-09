@@ -1,9 +1,10 @@
-## ------ language="Python" file="paranoodles/abstract.py"
+# ~\~ language=Python filename=paranoodles/abstract.py
+# ~\~ begin <<lit/paranoodles.md|paranoodles/abstract.py>>[0]
 from __future__ import annotations  # enable self-reference in type annotations
 from typing import Callable
 from abc import (ABC, abstractmethod)
 
-## ------ begin <<abstract-types>>[0]
+# ~\~ begin <<lit/paranoodles.md|abstract-types>>[0]
 class Vector(ABC):
     """Abstract base class for state variable of a problem.
     This should support simple arithmatic operations."""
@@ -24,11 +25,11 @@ class Vector(ABC):
 
     def __rmul__(self, other: float) -> Vector:
         return self * other
-## ------ end
-## ------ begin <<abstract-types>>[1]
+# ~\~ end
+# ~\~ begin <<lit/paranoodles.md|abstract-types>>[1]
 Problem = Callable[[Vector, float], Vector]
-## ------ end
-## ------ begin <<abstract-types>>[2]
+# ~\~ end
+# ~\~ begin <<lit/paranoodles.md|abstract-types>>[2]
 Solution = Callable[[Vector, float, float], Vector]
-## ------ end
-## ------ end
+# ~\~ end
+# ~\~ end

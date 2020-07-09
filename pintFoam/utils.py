@@ -1,5 +1,6 @@
-## ------ language="Python" file="pintFoam/utils.py"
-## ------ begin <<push-dir>>[0]
+# ~\~ language=Python filename=pintFoam/utils.py
+# ~\~ begin <<lit/cylinder.md|pintFoam/utils.py>>[0]
+# ~\~ begin <<lit/cylinder.md|push-dir>>[0]
 import os
 from pathlib import Path
 from contextlib import contextmanager
@@ -15,5 +16,5 @@ def pushd(path):
         yield
     finally:
         os.chdir(prev)
-## ------ end
-## ------ end
+# ~\~ end
+# ~\~ end

@@ -1,4 +1,5 @@
-## ------ language="Python" file="pintFoam/vector.py"
+# ~\~ language=Python filename=pintFoam/vector.py
+# ~\~ begin <<lit/cylinder.md|pintFoam/vector.py>>[0]
 from __future__ import annotations
 
 import numpy as np
@@ -15,7 +16,7 @@ from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 from PyFoam.Execution.UtilityRunner import UtilityRunner
 
-## ------ begin <<base-case>>[0]
+# ~\~ begin <<lit/cylinder.md|base-case>>[0]
 @dataclass
 class BaseCase:
     """Base case is a cleaned version of the system. If it contains any fields,
@@ -45,8 +46,8 @@ class BaseCase:
         """Deletes all vectors of this base-case."""
         for path in self.all_vector_paths():
             rmtree(path)
-## ------ end
-## ------ begin <<pintfoam-vector>>[0]
+# ~\~ end
+# ~\~ begin <<lit/cylinder.md|pintfoam-vector>>[0]
 def solution_directory(case):
     return SolutionDirectory(case.path)
 
@@ -55,15 +56,15 @@ def parameter_file(case, relative_path):
 
 def time_directory(case):
     return solution_directory(case)[case.time]
-## ------ end
-## ------ begin <<pintfoam-vector>>[1]
+# ~\~ end
+# ~\~ begin <<lit/cylinder.md|pintfoam-vector>>[1]
 @dataclass
 class Vector:
     base: BaseCase
     case: str
     time: str
 
-    ## ------ begin <<pintfoam-vector-properties>>[0]
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-properties>>[0]
     @property
     def path(self):
         return self.base.root / self.case
@@ -75,16 +76,16 @@ class Vector:
     def internalField(self, key):
         return time_directory(self)[key] \
             .getContent()['internalField']
-    ## ------ end
-    ## ------ begin <<pintfoam-vector-clone>>[0]
+    # ~\~ end
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
     def clone(self):
         x = self.base.new_vector()
         x.time = self.time
         rmtree(x.path/ x.time, ignore_errors=True)
         copytree(self.path / self.time, x.path / x.time)
         return x
-    ## ------ end
-    ## ------ begin <<pintfoam-vector-operate>>[0]
+    # ~\~ end
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[0]
     def _operate_vec_vec(self, other: Vector, op):
         for f in self.files:
             a_f = self.internalField(f)
@@ -118,8 +119,8 @@ class Vector:
                 x_content['internalField'].val[:] = op(x_f, s)
             x_content.writeFile()
         return x
-    ## ------ end
-    ## ------ begin <<pintfoam-vector-operators>>[0]
+    # ~\~ end
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operators>>[0]
     def __sub__(self, other: Vector):
         return self._operate_vec_vec(other, operator.sub)
 
@@ -128,9 +129,9 @@ class Vector:
 
     def __mul__(self, scale: float):
         return self._operate_vec_scalar(scale, operator.mul)
-    ## ------ end
-## ------ end
-## ------ begin <<pintfoam-set-fields>>[0]
+    # ~\~ end
+# ~\~ end
+# ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
 def setFields(v, *, defaultFieldValues, regions):
     x = parameter_file(v, "system/setFieldsDict")
     x['defaultFieldValues'] = defaultFieldValues
@@ -140,5 +141,5 @@ def setFields(v, *, defaultFieldValues, regions):
     with pushd(v.path):
         u = UtilityRunner(argv=['setFields'], silent=True)
         u.start()
-## ------ end
-## ------ end
+# ~\~ end
+# ~\~ end

@@ -13,7 +13,7 @@ Steps:
 
 # Problem
 
-![Flow around cylinder with Reynold's number 200.](./figures/case-result.png)
+![Flow around cylinder with Reynold's number 200.](./img/case-result.png)
 
 To install the requirements, also clone [ParaNoodles](https://github.com/ParallelWindfarms/paranoodles) and run `pip install .` from its project root. To install additional requirements, have OpenFOAM installed and:
 

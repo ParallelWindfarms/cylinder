@@ -1,4 +1,5 @@
-## ------ language="Python" file="pintFoam/run.py"
+# ~\~ language=Python filename=pintFoam/run.py
+# ~\~ begin <<lit/cylinder.md|pintFoam/run.py>>[0]
 import noodles
 from noodles import serial
 
@@ -14,4 +15,4 @@ def coarse(x, t_0, t_1):
 
 def registry():
     return serial.base() + serial.numpy()
-## ------ end
+# ~\~ end
