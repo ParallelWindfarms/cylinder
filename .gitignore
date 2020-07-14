@@ -3,4 +3,5 @@ __pycache__
 pintFoam.egg-info
 .entangled
 .*.swp
+.mypy_cache
 

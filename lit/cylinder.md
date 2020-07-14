@@ -78,7 +78,6 @@ controlDict.writeFile()
 ```
 
 # Interface with ParaNoodles
-
 We need to define the following:
 
 * `Vector`
@@ -89,7 +88,11 @@ We need to define the following:
 
 The last two steps will require the use of the `mapFields` utility in OpenFOAM and may require some tweaking to work out.
 
+- [ ] figure out how to work `mapFields`, and make this scriptable from Python.
+
 ## Vector
+
+- [ ] get rid of `PyFoam` in the vector definition, except for parsing config files
 
 ``` {.python file=pintFoam/vector.py}
 from __future__ import annotations
@@ -156,6 +159,8 @@ If no name is given to a new vector, a random one is generated.
 ### Retrieving files and time directories
 Note that the `BaseCase` has a property `path`. The same property will be defined in `Vector`. We can use this common property to retrieve a `SolutionDirectory`, `ParameterFile` or `TimeDirectory`.
 
+- [ ] These are PyFoam routines that may need to be replaced
+
 ``` {.python #pintfoam-vector}
 def solution_directory(case):
     return SolutionDirectory(case.path)
@@ -184,6 +189,9 @@ class Vector:
 
 From a vector we can extract a file path pointing to the specified time slot, list the containing files and read out `internalField` from any of those files.
 
+- [ ] `files` property would work different with Adios.
+- [ ] port `internalField` method to Adios.
+
 ``` {.python #pintfoam-vector-properties}
 @property
 def path(self):
@@ -200,6 +208,8 @@ def internalField(self, key):
 
 We clone a vector by creating a new vector and copying internal fields.
 
+- [ ] using Adios the location of a time-frame is different, copy `adiosData/{time}.bp*` instead
+
 ``` {.python #pintfoam-vector-clone}
 def clone(self):
     x = self.base.new_vector()
@@ -210,6 +220,9 @@ def clone(self):
 ```
 
 Applying an operator to a vector follows a generic recipe:
+
+- [ ] port to adios
+- [ ] see if the logic here can be faster with Adios, for instance, conversions to numpy arrays may slow things down, also `.val` member is part of PyFoam API.
 
 ``` {.python #pintfoam-vector-operate}
 def _operate_vec_vec(self, other: Vector, op):
@@ -264,6 +277,9 @@ def __mul__(self, scale: float):
 
 We may want to call `setFields` on our `Vector` to setup some test cases.
 
+- [ ] port to Adios
+- [ ] add doc-string
+
 ``` {.python #pintfoam-set-fields}
 def setFields(v, *, defaultFieldValues, regions):
     x = parameter_file(v, "system/setFieldsDict")
@@ -285,6 +301,7 @@ Solution = Callable[[Vector, float, float], Vector]
 ```
 
 meaning, we write a function taking a current state `Vector`, the time *now*, and the *target* time, returning a new `Vector`.
+
 
 ``` {.python file=pintFoam/solution.py}
 from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
@@ -328,6 +345,8 @@ y = x.clone()
 
 ### `controlDict`
 
+- [ ] check if this is enough to have Adios 'restart' from the correct time
+
 ``` {.python #set-control-dict}
 controlDict = parameter_file(y, "system/controlDict")
 controlDict.content['startTime'] = t_0
@@ -338,6 +357,8 @@ controlDict.writeFile()
 ```
 
 ### Run solver
+
+- [ ] Change `Execution.AnalyzedRunner` to self-coded `subprocess.run` type of operation.
 
 ``` {.python #run-solver}
 with pushd(y.path):
@@ -395,6 +416,8 @@ if __name__ == "__main__":
     print(result)
 # base_case.clean()
 ```
+
+- [ ] update Noodles registry to work with Adios files.
 
 ``` {.python file=pintFoam/run.py}
 import noodles
