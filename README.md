@@ -3,7 +3,7 @@ title: Flow past a cylinder and Parareal
 author: Johan Hidding
 ---
 
-Aim: simulate the turbulent flow past a cylinder in OpenFOAM and parallise with Parareal.
+Aim: simulate the turbulent flow past a cylinder in OpenFOAM and parallelise with Parareal.
 
 Steps:
 

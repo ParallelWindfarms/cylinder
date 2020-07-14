@@ -7,7 +7,7 @@ from abc import (ABC, abstractmethod)
 # ~\~ begin <<lit/paranoodles.md|abstract-types>>[0]
 class Vector(ABC):
     """Abstract base class for state variable of a problem.
-    This should support simple arithmatic operations."""
+    This should support simple arithmetic operations."""
     @abstractmethod
     def __add__(self, other: Vector) -> Vector:
         """Summation of two result vectors."""
@@ -23,6 +23,7 @@ class Vector(ABC):
         """Scale vector with scalar."""
         pass
 
+    @abstractmethod
     def __rmul__(self, other: float) -> Vector:
         return self * other
 # ~\~ end

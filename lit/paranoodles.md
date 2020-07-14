@@ -32,7 +32,7 @@ $$y_{n+1} = y_{n} + \Delta t f(y_{n}, t).$${#eq:euler-method}
 ``` {.python #abstract-types}
 class Vector(ABC):
     """Abstract base class for state variable of a problem.
-    This should support simple arithmatic operations."""
+    This should support simple arithmetic operations."""
     @abstractmethod
     def __add__(self, other: Vector) -> Vector:
         """Summation of two result vectors."""
@@ -48,6 +48,7 @@ class Vector(ABC):
         """Scale vector with scalar."""
         pass
 
+    @abstractmethod
     def __rmul__(self, other: float) -> Vector:
         return self * other
 ```
@@ -66,7 +67,11 @@ If we have a `Problem`, we're after a `Solution`: a function that, given an init
 Solution = Callable[[Vector, float, float], Vector]
 ```
 
-Then the forward Euler method (+@eq:euler-method), is given by
+Those readers more familiar with classical physics or mathematics may notice that our `Problem` object corresponds with the function $f$ in (+@eq:ode). The `Solution` object, on the other hand, corresponds with the evolution operator $\phi$ in equation @eq:solution.
+
+$$y(t) = \phi(y_0, t_0; t).$${#eq:solution}
+
+Intuitively, $\phi$ represents any method that solves (even approximately) our initial value problem. Take for instance the forward Euler method (+@eq:euler-method), given by
 
 ``` {.python file=paranoodles/forward_euler.py}
 from .abstract import (Vector, Problem, Solution)
@@ -378,4 +383,3 @@ draw_workflow('parareal-graph.svg', noodles.get_workflow(y_parareal), paint)
 
 <<noodlify>>
 ```
-
