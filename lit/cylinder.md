@@ -103,12 +103,12 @@ import operator
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
-from shutil import copytree, rmtree
+from shutil import copytree, rmtree, copyfile
 
-from .utils import pushd
+# from .utils import pushd
 
-from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
-from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
+from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile  # type: ignore
+from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type: ignore
 
 <<base-case>>
 <<pintfoam-vector>>
@@ -212,8 +212,16 @@ We clone a vector by creating a new vector and copying internal fields.
 def clone(self):
     x = self.base.new_vector()
     x.time = self.time
-    rmtree(x.path / x.time, ignore_errors=True)
-    copytree(self.path / self.time, x.path / x.time)
+    rmtree(x.path / "adiosData", ignore_errors=True)
+    try:
+        copyfile(self.path / "adiosData" / (self.time + ".bp"),
+                 x.path / "adiosData")
+        pathname = self.time + ".bp.dir"
+        copytree(self.path / "adiosData" / pathname,
+                 x.path / "adiosData" / pathname)
+    except OSError:
+        # FIXME: Warn if this happens if self.time != "0"
+        pass
     return x
 ```
 
@@ -301,8 +309,7 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 ``` {.python file=pintFoam/solution.py}
 import subprocess
 
-from .vector import (BaseCase, Vector, parameter_file, solution_directory)
-from .utils import pushd
+from .vector import (BaseCase, Vector, parameter_file)
 
 
 def run_block_mesh(case: BaseCase):
@@ -427,7 +434,7 @@ if __name__ == "__main__":
 - [ ] update Noodles registry to work with Adios files.
 
 ``` {.python file=pintFoam/run.py}
-import noodles
+import noodles   # type: ignore
 from noodles import serial
 
 from .solution import foam
@@ -471,9 +478,10 @@ I haven't been able (with simple attempts) to run a case outside the definition 
 import os
 from pathlib import Path
 from contextlib import contextmanager
+from typing import Union
 
 @contextmanager
-def pushd(path):
+def pushd(path: Union[str, Path]):
     """Context manager to change directory to given path,
     and get back to current dir at exit."""
     prev = Path.cwd()

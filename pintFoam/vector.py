@@ -8,12 +8,12 @@ import operator
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
-from shutil import copytree, rmtree
+from shutil import copytree, rmtree, copyfile
 
-from .utils import pushd
+# from .utils import pushd
 
-from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
-from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
+from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile  # type: ignore
+from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type: ignore
 
 # ~\~ begin <<lit/cylinder.md|base-case>>[0]
 @dataclass
@@ -80,8 +80,16 @@ class Vector:
     def clone(self):
         x = self.base.new_vector()
         x.time = self.time
-        rmtree(x.path / x.time, ignore_errors=True)
-        copytree(self.path / self.time, x.path / x.time)
+        rmtree(x.path / "adiosData", ignore_errors=True)
+        try:
+            copyfile(self.path / "adiosData" / (self.time + ".bp"),
+                     x.path / "adiosData")
+            pathname = self.time + ".bp.dir"
+            copytree(self.path / "adiosData" / pathname,
+                     x.path / "adiosData" / pathname)
+        except OSError:
+            # FIXME: Warn if this happens if self.time != "0"
+            pass
         return x
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[0]

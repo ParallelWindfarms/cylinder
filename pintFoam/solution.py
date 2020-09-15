@@ -2,8 +2,7 @@
 # ~\~ begin <<lit/cylinder.md|pintFoam/solution.py>>[0]
 import subprocess
 
-from .vector import (BaseCase, Vector, parameter_file, solution_directory)
-from .utils import pushd
+from .vector import (BaseCase, Vector, parameter_file)
 
 
 def run_block_mesh(case: BaseCase):

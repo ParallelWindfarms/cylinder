@@ -91,15 +91,16 @@ Any existing solution can be iterated over to provide a solution over a larger t
 <!--\end{cases}.$$-->
 
 ``` {.python file=paranoodles/iterate_solution.py}
-from .abstract import (Vector, Problem, Solution)
+from .abstract import (Vector, Solution)
 import numpy as np
+import math
 
 def iterate_solution(step: Solution, h: float) -> Solution:
     def iter_step(y: Vector, t_0: float, t_1: float) -> Vector:
         """Stepping function of iterated solution."""
         n = math.ceil((t_1 - t_0) / h)
         steps = np.arange(t_0, t_1, n + 1)
-        for t_a, t_b in zip(steps[:-1], steps[1:])
+        for t_a, t_b in zip(steps[:-1], steps[1:]):
             y = step(y, t_a, t_b)
         return y
     return iter_step
@@ -168,15 +169,15 @@ To plot a `Solution`, we need to tabulate the results for a given sequence of ti
 
 ``` {.python file=paranoodles/tabulate_solution.py}
 from .abstract import (Solution, Vector)
-from typing import (Sequence)
+from typing import (Sequence, Any)
 import numpy as np
 
-Array = np.ndarray
+Array = Any
 
 def tabulate(step: Solution, y_0: Vector, t: Array) -> Sequence[Vector]:
     """Tabulate the step-wise solution, starting from `y_0`, for every time
     point given in array `t`."""
-    if isinstance(y_0, Array):
+    if isinstance(y_0, np.ndarray):
         return tabulate_np(step, y_0, t)
 
     y = [y_0]

@@ -1,6 +1,6 @@
 # ~\~ language=Python filename=pintFoam/run.py
 # ~\~ begin <<lit/cylinder.md|pintFoam/run.py>>[0]
-import noodles
+import noodles   # type: ignore
 from noodles import serial
 
 from .solution import foam
