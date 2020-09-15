@@ -31,7 +31,7 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics'],
 
-    install_requires=['noodles[xenon,numpy]', 'scipy'],
+    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam'],
     extras_require={
         'develop': [
             'pytest', 'pytest', 'coverage', 'pep8', 'numpy', 'tox',
