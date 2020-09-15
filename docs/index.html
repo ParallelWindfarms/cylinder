@@ -533,6 +533,7 @@ figure out how to work <code>mapFields</code>, and make this scriptable from Pyt
 <li><input type="checkbox" disabled="" />
 get rid of <code>PyFoam</code> in the vector definition, except for parsing config files</li>
 </ul>
+<p>The abstract <code>Vector</code>, defined below, represents any single state in the simulation. It consists of a <code>RunDirectory</code> and a time-frame.</p>
 <div class="annotated-code">
 <p><span><em>«pintFoam/vector.py»=</em></span></p>
 <div class="sourceCode" id="cb17" data-file="pintFoam/vector.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
@@ -553,9 +554,15 @@ get rid of <code>PyFoam</code> in the vector definition, except for parsing conf
 <span id="cb17-16"><a href="#cb17-16" aria-hidden="true"></a><span class="op">&lt;&lt;</span>base<span class="op">-</span>case<span class="op">&gt;&gt;</span></span>
 <span id="cb17-17"><a href="#cb17-17" aria-hidden="true"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
-<p>The abstract <code>Vector</code> representing any single state in the simulation consists of a <code>RunDirectory</code> and a time-frame.</p>
 <h3 id="base-case">Base case</h3>
-<p>We will operate on a <code>Vector</code>, the same way everything is done in OpenFOAM. Copy, paste and edit. This is why for every <code>Vector</code> we define a <code>BaseCase</code> that is used to generate new vectors. The <code>BaseCase</code> should have only one time directory, namely <code>0</code>.</p>
+<p>We will operate on a <code>Vector</code> the same way everything is done in OpenFOAM, that is:</p>
+<ol type="1">
+<li>Copy-paste a case (known as the base case)</li>
+<li>Edit the copy with new simulation parameters</li>
+<li>Run the simulation</li>
+</ol>
+<p>This is why for every <code>Vector</code> we define a <code>BaseCase</code> that is used to generate new vectors. The <code>BaseCase</code> should have only one time directory containing the initial conditions, namely <code>0</code>. The simulation generates new folders containing the data corresponding to different times. The time is coded, somewhat uncomfortably, in the directory name (<code>0.01</code>, <code>0.02</code>, and so on).</p>
+<p>The class <code>Vector</code> takes care of all those details.</p>
 <div class="annotated-code">
 <p><span><em>«base-case»=</em></span></p>
 <div class="sourceCode" id="base-case"><pre class="sourceCode python"><code class="sourceCode python"><span id="base-case-1"><a href="#base-case-1" aria-hidden="true"></a><span class="at">@dataclass</span></span>
@@ -588,7 +595,7 @@ get rid of <code>PyFoam</code> in the vector definition, except for parsing conf
 <span id="base-case-28"><a href="#base-case-28" aria-hidden="true"></a>        <span class="cf">for</span> path <span class="kw">in</span> <span class="va">self</span>.all_vector_paths():</span>
 <span id="base-case-29"><a href="#base-case-29" aria-hidden="true"></a>            rmtree(path)</span></code></pre></div>
 </div>
-<p>If no name is given to a new vector, a random one is generated.</p>
+<p>In our implementation, if no name is given to a new vector, a random one is generated.</p>
 <h3 id="retrieving-files-and-time-directories">Retrieving files and time directories</h3>
 <p>Note that the <code>BaseCase</code> has a property <code>path</code>. The same property will be defined in <code>Vector</code>. We can use this common property to retrieve a <code>SolutionDirectory</code>, <code>ParameterFile</code> or <code>TimeDirectory</code>.</p>
 <ul class="task-list">
@@ -641,7 +648,7 @@ port <code>internalField</code> method to Adios.</li>
 <span id="pintfoam-vector-properties-10"><a href="#pintfoam-vector-properties-10" aria-hidden="true"></a>    <span class="cf">return</span> time_directory(<span class="va">self</span>)[key] <span class="op">\</span></span>
 <span id="pintfoam-vector-properties-11"><a href="#pintfoam-vector-properties-11" aria-hidden="true"></a>        .getContent()[<span class="st">&#39;internalField&#39;</span>]</span></code></pre></div>
 </div>
-<p>We clone a vector by creating a new vector and copying internal fields.</p>
+<p>We clone a vector by creating a new vector and copying the internal fields.</p>
 <ul class="task-list">
 <li><input type="checkbox" disabled="" />
 using Adios the location of a time-frame is different, copy <code>adiosData/{time}.bp*</code> instead</li>
@@ -665,7 +672,12 @@ using Adios the location of a time-frame is different, copy <code>adiosData/{tim
 <span id="pintfoam-vector-clone-15"><a href="#pintfoam-vector-clone-15" aria-hidden="true"></a>        <span class="cf">pass</span></span>
 <span id="pintfoam-vector-clone-16"><a href="#pintfoam-vector-clone-16" aria-hidden="true"></a>    <span class="cf">return</span> x</span></code></pre></div>
 </div>
-<p>Applying an operator to a vector follows a generic recipe:</p>
+<p>In order to apply the parareal algorithm to our vectors (or indeed, any other algorithm worth that name), we need to define how to operate with them. Particularly, we’ll need to implement:</p>
+<ul>
+<li>Vector addition and subtraction (as we’ll need to sum and subtract the results of applying the coarse and fine integrators)</li>
+<li>Vector scaling (as the integrators involve scaling with the inverse of the step)</li>
+</ul>
+<p>In order to achieve this, first we’ll write generic recipes for <strong>any</strong> operation between vectors and <strong>any</strong> operation between a scalar and a vector:</p>
 <ul class="task-list">
 <li><input type="checkbox" disabled="" />
 port to adios</li>
@@ -708,6 +720,7 @@ see if the logic here can be faster with Adios, for instance, conversions to num
 <span id="pintfoam-vector-operate-32"><a href="#pintfoam-vector-operate-32" aria-hidden="true"></a>        x_content.writeFile()</span>
 <span id="pintfoam-vector-operate-33"><a href="#pintfoam-vector-operate-33" aria-hidden="true"></a>    <span class="cf">return</span> x</span></code></pre></div>
 </div>
+<p><em>The conditional structures in the chunk above are due to the fact that uniform and non-uniform fields are stored in not mutually-compatible ways, forcing us to operate differently with them.</em></p>
 <p>We now have the tools to define vector addition, subtraction and scaling.</p>
 <div class="annotated-code">
 <p><span><em>«pintfoam-vector-operators»=</em></span></p>
@@ -720,6 +733,7 @@ see if the logic here can be faster with Adios, for instance, conversions to num
 <span id="pintfoam-vector-operators-7"><a href="#pintfoam-vector-operators-7" aria-hidden="true"></a><span class="kw">def</span> <span class="fu">__mul__</span>(<span class="va">self</span>, scale: <span class="bu">float</span>) <span class="op">-&gt;</span> Vector:</span>
 <span id="pintfoam-vector-operators-8"><a href="#pintfoam-vector-operators-8" aria-hidden="true"></a>    <span class="cf">return</span> <span class="va">self</span>._operate_vec_scalar(scale, operator.mul)</span></code></pre></div>
 </div>
+<p>In the code chunk above we used the so-called magic methods. If we use a minus sign to subtract two vectors, the method <code>__sub__</code> is being executed under the hood.</p>
 <h3 id="setfields-utility"><code>setFields</code> utility</h3>
 <p>We may want to call <code>setFields</code> on our <code>Vector</code> to setup some test cases.</p>
 <ul class="task-list">
