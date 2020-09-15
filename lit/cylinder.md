@@ -494,7 +494,3 @@ def pushd(path: Union[str, Path]):
     finally:
         os.chdir(prev)
 ```
-
-
-
-
