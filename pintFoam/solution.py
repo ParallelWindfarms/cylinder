@@ -1,7 +1,8 @@
 # ~\~ language=Python filename=pintFoam/solution.py
 # ~\~ begin <<lit/cylinder.md|pintFoam/solution.py>>[0]
-from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
-from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
+# from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
+# from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
+import subprocess
 
 from .vector import (Vector, parameter_file, solution_directory)
 from .utils import pushd
@@ -10,7 +11,7 @@ from .utils import pushd
 epsilon = 1e-6
 # ~\~ end
 # ~\~ begin <<lit/cylinder.md|pintfoam-solution>>[0]
-def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float):
+def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float) -> Vector:
     # ~\~ begin <<lit/cylinder.md|pintfoam-solution-function>>[0]
     assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
     y = x.clone()
@@ -19,13 +20,12 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float):
     controlDict.content['startTime'] = t_0
     controlDict.content['endTime'] = t_1
     controlDict.content['deltaT'] = dt
-    controlDict.content['writeInterval'] = dt
+    controlDict.content['writeInterval'] = 1
     controlDict.writeFile()
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|run-solver>>[0]
-    with pushd(y.path):
-        run = AnalyzedRunner(StandardLogAnalyzer(), argv=[solver], silent=True)
-        run.start()
+    subprocess.run(solver, cwd=y.path, check=True)
+
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|return-result>>[0]
     sd = solution_directory(y)

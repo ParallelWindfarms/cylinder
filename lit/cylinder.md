@@ -304,8 +304,9 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 
 
 ``` {.python file=pintFoam/solution.py}
-from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
-from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
+# from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
+# from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
+import subprocess
 
 from .vector import (Vector, parameter_file, solution_directory)
 from .utils import pushd
@@ -329,7 +330,7 @@ epsilon = 1e-6
 Our solution depends on the solver chosen and the given time-step:
 
 ``` {.python #pintfoam-solution}
-def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float):
+def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float) -> Vector:
     <<pintfoam-solution-function>>
 ```
 
@@ -345,14 +346,14 @@ y = x.clone()
 
 ### `controlDict`
 
-- [ ] check if this is enough to have Adios 'restart' from the correct time
+- [x] check if this is enough to have Adios 'restart' from the correct time
 
 ``` {.python #set-control-dict}
 controlDict = parameter_file(y, "system/controlDict")
 controlDict.content['startTime'] = t_0
 controlDict.content['endTime'] = t_1
 controlDict.content['deltaT'] = dt
-controlDict.content['writeInterval'] = dt
+controlDict.content['writeInterval'] = 1
 controlDict.writeFile()
 ```
 
@@ -361,9 +362,8 @@ controlDict.writeFile()
 - [ ] Change `Execution.AnalyzedRunner` to self-coded `subprocess.run` type of operation.
 
 ``` {.python #run-solver}
-with pushd(y.path):
-    run = AnalyzedRunner(StandardLogAnalyzer(), argv=[solver], silent=True)
-    run.start()
+subprocess.run(solver, cwd=y.path, check=True)
+
 ```
 
 ### Return result
