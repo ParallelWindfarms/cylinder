@@ -214,7 +214,7 @@ We clone a vector by creating a new vector and copying internal fields.
 def clone(self):
     x = self.base.new_vector()
     x.time = self.time
-    rmtree(x.path/ x.time, ignore_errors=True)
+    rmtree(x.path / x.time, ignore_errors=True)
     copytree(self.path / self.time, x.path / x.time)
     return x
 ```
@@ -252,7 +252,7 @@ def _operate_vec_scalar(self, s: float, op):
     for f in self.files:
         x_f = self.internalField(f)
         x_content = time_directory(x)[f].getContent()
-        if x_f.shape is ():
+        if x_f.shape == ():
             x_content['internalField'].val = op(x_f, s)
         else:
             x_content['internalField'].val[:] = op(x_f, s)
@@ -308,8 +308,13 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 # from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
 import subprocess
 
-from .vector import (Vector, parameter_file, solution_directory)
+from .vector import (BaseCase, Vector, parameter_file, solution_directory)
 from .utils import pushd
+
+
+def run_block_mesh(case: BaseCase):
+    subprocess.run("blockMesh", cwd=case.path, check=True)
+
 
 <<pintfoam-epsilon>>
 <<pintfoam-solution>>

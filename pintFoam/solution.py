@@ -4,8 +4,13 @@
 # from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
 import subprocess
 
-from .vector import (Vector, parameter_file, solution_directory)
+from .vector import (BaseCase, Vector, parameter_file, solution_directory)
 from .utils import pushd
+
+
+def run_block_mesh(case: BaseCase):
+    subprocess.run("blockMesh", cwd=case.path, check=True)
+
 
 # ~\~ begin <<lit/cylinder.md|pintfoam-epsilon>>[0]
 epsilon = 1e-6

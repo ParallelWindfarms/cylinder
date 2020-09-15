@@ -81,7 +81,7 @@ class Vector:
     def clone(self):
         x = self.base.new_vector()
         x.time = self.time
-        rmtree(x.path/ x.time, ignore_errors=True)
+        rmtree(x.path / x.time, ignore_errors=True)
         copytree(self.path / self.time, x.path / x.time)
         return x
     # ~\~ end
@@ -113,7 +113,7 @@ class Vector:
         for f in self.files:
             x_f = self.internalField(f)
             x_content = time_directory(x)[f].getContent()
-            if x_f.shape is ():
+            if x_f.shape == ():
                 x_content['internalField'].val = op(x_f, s)
             else:
                 x_content['internalField'].val[:] = op(x_f, s)
