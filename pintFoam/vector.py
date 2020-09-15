@@ -14,7 +14,6 @@ from .utils import pushd
 
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
-from PyFoam.Execution.UtilityRunner import UtilityRunner
 
 # ~\~ begin <<lit/cylinder.md|base-case>>[0]
 @dataclass
@@ -130,16 +129,5 @@ class Vector:
     def __mul__(self, scale: float):
         return self._operate_vec_scalar(scale, operator.mul)
     # ~\~ end
-# ~\~ end
-# ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
-def setFields(v, *, defaultFieldValues, regions):
-    x = parameter_file(v, "system/setFieldsDict")
-    x['defaultFieldValues'] = defaultFieldValues
-    x['regions'] = regions
-    x.writeFile()
-
-    with pushd(v.path):
-        u = UtilityRunner(argv=['setFields'], silent=True)
-        u.start()
 # ~\~ end
 # ~\~ end

@@ -109,11 +109,9 @@ from .utils import pushd
 
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
-from PyFoam.Execution.UtilityRunner import UtilityRunner
 
 <<base-case>>
 <<pintfoam-vector>>
-<<pintfoam-set-fields>>
 ```
 
 The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
@@ -286,10 +284,7 @@ def setFields(v, *, defaultFieldValues, regions):
     x['defaultFieldValues'] = defaultFieldValues
     x['regions'] = regions
     x.writeFile()
-
-    with pushd(v.path):
-        u = UtilityRunner(argv=['setFields'], silent=True)
-        u.start()
+    subprocess.run("setFields", cwd=v.path, check=True)
 ```
 
 ## Solution
@@ -304,8 +299,6 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 
 
 ``` {.python file=pintFoam/solution.py}
-# from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
-# from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
 import subprocess
 
 from .vector import (BaseCase, Vector, parameter_file, solution_directory)
@@ -316,6 +309,7 @@ def run_block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
 
 
+<<pintfoam-set-fields>>
 <<pintfoam-epsilon>>
 <<pintfoam-solution>>
 ```
@@ -335,6 +329,15 @@ epsilon = 1e-6
 Our solution depends on the solver chosen and the given time-step:
 
 ``` {.python #pintfoam-solution}
+
+def get_times(path):
+    def get_time(filepath):
+        return ".".join(filepath.name.split(".")[:-1])
+    return sorted(
+        [get_time(s)
+         for s in (path / "adiosData").glob("*.bp")],
+        key=float)
+
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float) -> Vector:
     <<pintfoam-solution-function>>
 ```
@@ -374,8 +377,7 @@ subprocess.run(solver, cwd=y.path, check=True)
 ### Return result
 
 ``` {.python #return-result}
-sd = solution_directory(y)
-t1_str = sd.times[-1]
+t1_str = get_times(y.path)[-1]
 return Vector(y.base, y.case, t1_str)
 ```
 
