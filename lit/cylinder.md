@@ -103,7 +103,7 @@ import operator
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
-from shutil import copytree, rmtree, copyfile
+from shutil import copytree, rmtree, copy
 
 # from .utils import pushd
 
@@ -213,14 +213,16 @@ def clone(self):
     x = self.base.new_vector()
     x.time = self.time
     rmtree(x.path / "adiosData", ignore_errors=True)
+    (x.path / "adiosData").mkdir()
     try:
-        copyfile(self.path / "adiosData" / (self.time + ".bp"),
-                 x.path / "adiosData")
+        copy(self.path / "adiosData" / (self.time + ".bp"),
+             x.path / "adiosData")
         pathname = self.time + ".bp.dir"
         copytree(self.path / "adiosData" / pathname,
                  x.path / "adiosData" / pathname)
-    except OSError:
+    except OSError as e:
         # FIXME: Warn if this happens if self.time != "0"
+        print(e)
         pass
     return x
 ```
@@ -231,7 +233,7 @@ Applying an operator to a vector follows a generic recipe:
 - [ ] see if the logic here can be faster with Adios, for instance, conversions to numpy arrays may slow things down, also `.val` member is part of PyFoam API.
 
 ``` {.python #pintfoam-vector-operate}
-def _operate_vec_vec(self, other: Vector, op):
+def _operate_vec_vec(self, other: Vector, op) -> Vector:
     for f in self.files:
         a_f = self.internalField(f)
         b_f = other.internalField(f)
@@ -253,7 +255,7 @@ def _operate_vec_vec(self, other: Vector, op):
 
     return x
 
-def _operate_vec_scalar(self, s: float, op):
+def _operate_vec_scalar(self, s: float, op) -> Vector:
     x = self.clone()
     for f in self.files:
         x_f = self.internalField(f)
@@ -269,13 +271,13 @@ def _operate_vec_scalar(self, s: float, op):
 We now have the tools to define vector addition, subtraction and scaling.
 
 ``` {.python #pintfoam-vector-operators}
-def __sub__(self, other: Vector):
+def __sub__(self, other: Vector) -> Vector:
     return self._operate_vec_vec(other, operator.sub)
 
-def __add__(self, other: Vector):
+def __add__(self, other: Vector) -> Vector:
     return self._operate_vec_vec(other, operator.add)
 
-def __mul__(self, scale: float):
+def __mul__(self, scale: float) -> Vector:
     return self._operate_vec_scalar(scale, operator.mul)
 ```
 

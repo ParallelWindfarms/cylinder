@@ -4,11 +4,9 @@ Unit testing needs to be done on cases that are easy. For the moment we have sel
 ``` {.python file=test/test_foam_run.py}
 from pathlib import Path
 from shutil import copytree
-from os import listdir
 
 from pintFoam.vector import BaseCase
 from pintFoam.solution import (run_block_mesh, foam, get_times)
-from pintFoam.utils import pushd
 
 def test_basic_pitzDaily(tmp_path):
     path = Path(tmp_path) / "case0"
@@ -22,7 +20,11 @@ def test_basic_pitzDaily(tmp_path):
     end_vec = foam("scalarTransportFoam", 0.01, init_vec, 0.0, 0.1)
 
     assert (end_vec.path / "adiosData").exists()
-    print(get_times(end_vec.path))
     assert end_vec.time == "0.1"
+
+    end_vec_clone = end_vec.clone()
+    assert end_vec_clone.time == "0.1"
+    print(list(end_vec_clone.path.glob("adiosData/*")))
+    assert get_times(end_vec_clone.path) == ["0.1"]
 ```
 

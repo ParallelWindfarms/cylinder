@@ -4,4 +4,6 @@ pintFoam.egg-info
 .entangled
 .*.swp
 .mypy_cache
+.coverage
+notebooks
 

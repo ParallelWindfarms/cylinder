@@ -34,7 +34,8 @@ setup(
     install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam'],
     extras_require={
         'develop': [
-            'pytest', 'pytest', 'coverage', 'pep8', 'numpy', 'tox',
+            'pytest', 'pytest-cov', 'pytest-mypy', 'pytest-flake8',
+            'mypy', 'coverage', 'pep8', 'numpy', 'tox',
             'sphinx', 'sphinx_rtd_theme', 'nbsphinx', 'flake8'],
     },
 )
