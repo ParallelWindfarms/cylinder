@@ -92,8 +92,6 @@ The last two steps will require the use of the `mapFields` utility in OpenFOAM a
 
 ## Vector
 
-- [ ] get rid of `PyFoam` in the vector definition, except for parsing config files
-
 The abstract `Vector`, defined below, represents any single state in the simulation. It consists of a `RunDirectory` and a time-frame.
 
 ``` {.python file=pintFoam/vector.py}
