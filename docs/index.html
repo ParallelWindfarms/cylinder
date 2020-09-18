@@ -188,19 +188,28 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <p><em>The implementation of the actual methods can be found below in this document.</em></p>
 <p>Note that we don’t make a distinction here between a state vector and a vector representing a change in state. This may change in the future.</p>
-<p>An ODE is then given as a function taking a <code>Vector</code> and a <code>float</code> returning a <code>Vector</code>. We define the type <code>Problem</code>:</p>
+<p>An ODE is then given as a function taking a <code>Vector</code> (the state <span class="math inline">\(y\)</span>) and a <code>float</code> (the time <span class="math inline">\(t\)</span>) returning a <code>Vector</code> (the derivative <span class="math inline">\(y&#39; = f(y,t)\)</span> evaluated at <span class="math inline">\((y,t)\)</span>). We define the type <code>Problem</code>:</p>
 <div class="annotated-code">
 <p><span><em>«abstract-types»+</em></span></p>
 <div class="sourceCode" id="abstract-types"><pre class="sourceCode python"><code class="sourceCode python"><span id="abstract-types-1"><a href="#abstract-types-1" aria-hidden="true"></a>Problem <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>], Vector]</span></code></pre></div>
 </div>
-<p>If we have a <code>Problem</code>, we’re after a <code>Solution</code>: a function that, given an initial <code>Vector</code>, initial time and final time, gives the resulting <code>Vector</code>.</p>
+<p>In mathematical notation the snippet above means:</p>
+<p><span class="math display">\[Problem : (y, t) \longrightarrow f(y, t) = y&#39;\]</span></p>
+<p>If we have a <code>Problem</code>, we’re after a <code>Solution</code>: a function that, given an initial <code>Vector</code> (the initial condition <span class="math inline">\(y_0\)</span>), initial time (<span class="math inline">\(t_0\)</span>) and final time (<span class="math inline">\(t\)</span>), gives the resulting <code>Vector</code> (the solution, <span class="math inline">\(y(t)\)</span> for the given initial conditions).</p>
 <div class="annotated-code">
 <p><span><em>«abstract-types»+</em></span></p>
 <div class="sourceCode" id="abstract-types"><pre class="sourceCode python"><code class="sourceCode python"><span id="abstract-types-1"><a href="#abstract-types-1" aria-hidden="true"></a>Solution <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>, <span class="bu">float</span>], Vector]</span></code></pre></div>
 </div>
 <p>Those readers more familiar with classical physics or mathematics may notice that our <code>Problem</code> object corresponds with the function <span class="math inline">\(f\)</span> in (eq. <a href="#eq:ode">1</a>). The <code>Solution</code> object, on the other hand, corresponds with the evolution operator <span class="math inline">\(\phi\)</span> in equation <a href="#eq:solution">3</a>.</p>
-<p><span id="eq:solution" class="eqnos"><span class="math display">\[y(t) = \phi(y_0, t_0; t).\]</span><span class="eqnos-number">(3)</span></span></p>
-<p>Intuitively, <span class="math inline">\(\phi\)</span> represents any method that solves (even approximately) our initial value problem. Take for instance the forward Euler method (eq. <a href="#eq:euler-method">2</a>), given by</p>
+<p><span id="eq:solution" class="eqnos"><span class="math display">\[Solution : (y_0, t_0; t) \longrightarrow \phi(y_0, t_0; t) = y(t).\]</span><span class="eqnos-number">(3)</span></span></p>
+<p>Intuitively, <span class="math inline">\(\phi\)</span> represents any method that solves (even approximately) our initial value problem.</p>
+<p>As a quick example, think of the differential equation <span class="math inline">\(y&#39; = ry\)</span>. This can be solved by analytical integration. The <code>Problem</code> and <code>Solution</code> objects is in this case are:</p>
+<p><span class="math display">\[ Problem : (y, t) \longrightarrow r y \]</span> <span class="math display">\[ Solution : (y_0, t_0; t) \longrightarrow y_0 e^{r(t - t_0)} \]</span></p>
+<p>The challenge is, of course, to find a way of transforming a <code>Problem</code> into a <code>Solution</code>. This is what integration algorithms do.</p>
+<p><span class="math display">\[ Integration \ algorithm : Problem \longrightarrow Solution \]</span></p>
+<p>If we look a bit closely at the definitions of <code>Problem</code> and <code>Solution</code> we’ll notice that an integration algorithm is indeed a functional that accepts functions of <span class="math inline">\((y,t)\)</span> as an input and returns functions of <span class="math inline">\((y_0, t_0, t)\)</span> as an output.</p>
+<p><span class="math display">\[ Integration \ algorithm : f \longrightarrow \phi \]</span></p>
+<p>An example of such an integration algorithm is the forward Euler method (eq. <a href="#eq:euler-method">2</a>), that can be implemented as:</p>
 <div class="annotated-code">
 <p><span><em>«paranoodles/forward_euler.py»=</em></span></p>
 <div class="sourceCode" id="cb4" data-file="paranoodles/forward_euler.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="im">from</span> .abstract <span class="im">import</span> (Vector, Problem, Solution)</span>

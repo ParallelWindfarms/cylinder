@@ -57,13 +57,17 @@ _The implementation of the actual methods can be found below in this document._
 
 Note that we don't make a distinction here between a state vector and a vector representing a change in state. This may change in the future.
 
-An ODE is then given as a function taking a `Vector` and a `float` returning a `Vector`. We define the type `Problem`:
+An ODE is then given as a function taking a `Vector` (the state $y$) and a `float` (the time $t$) returning a `Vector` (the derivative $y' = f(y,t)$ evaluated at $(y,t)$). We define the type `Problem`:
 
 ``` {.python #abstract-types}
 Problem = Callable[[Vector, float], Vector]
 ```
 
-If we have a `Problem`, we're after a `Solution`: a function that, given an initial `Vector`, initial time and final time, gives the resulting `Vector`.
+In mathematical notation the snippet above means:
+
+$$Problem : (y, t) \longrightarrow f(y, t) = y'$$
+
+If we have a `Problem`, we're after a `Solution`: a function that, given an initial `Vector` (the initial condition $y_0$), initial time ($t_0$) and final time ($t$), gives the resulting `Vector` (the solution, $y(t)$ for the given initial conditions).
 
 ``` {.python #abstract-types}
 Solution = Callable[[Vector, float, float], Vector]
@@ -71,9 +75,24 @@ Solution = Callable[[Vector, float, float], Vector]
 
 Those readers more familiar with classical physics or mathematics may notice that our `Problem` object corresponds with the function $f$ in (+@eq:ode). The `Solution` object, on the other hand, corresponds with the evolution operator $\phi$ in equation @eq:solution.
 
-$$y(t) = \phi(y_0, t_0; t).$${#eq:solution}
+$$Solution : (y_0, t_0; t) \longrightarrow \phi(y_0, t_0; t) = y(t).$${#eq:solution}
 
-Intuitively, $\phi$ represents any method that solves (even approximately) our initial value problem. Take for instance the forward Euler method (+@eq:euler-method), given by
+Intuitively, $\phi$ represents any method that solves (even approximately) our initial value problem. 
+
+As a quick example, think of the differential equation $y' = ry$. This can be solved by analytical integration. The `Problem` and  `Solution` objects is in this case are:
+
+$$ Problem : (y, t) \longrightarrow r y $$
+$$ Solution : (y_0, t_0; t) \longrightarrow y_0 e^{r(t - t_0)} $$
+
+The challenge is, of course, to find a way of transforming a `Problem` into a `Solution`. This is what integration algorithms do.
+
+$$ Integration \ algorithm : Problem \longrightarrow Solution $$
+
+If we look a bit closely at the definitions of `Problem` and `Solution` we'll notice that an integration algorithm is indeed a functional that accepts functions of $(y,t)$ as an input and returns functions of $(y_0, t_0, t)$ as an output.
+
+$$ Integration \ algorithm : f \longrightarrow \phi $$
+
+An example of such an integration algorithm is the forward Euler method (+@eq:euler-method), that can be implemented as:
 
 ``` {.python file=paranoodles/forward_euler.py}
 from .abstract import (Vector, Problem, Solution)
