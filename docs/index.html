@@ -256,9 +256,16 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <h3 id="exact-solution">Exact solution</h3>
 <p>The damped harmonic oscillator has an exact solution, given the ansatz <span class="math inline">\(y = A \exp(z t)\)</span>, we get</p>
-<p><span class="math display">\[z = \omega_0\left(-\zeta \pm \sqrt{\zeta^2 - 1}\right).\]</span></p>
-<p>There are three cases: <em>overdamped</em> (<span class="math inline">\(\zeta &gt; 1\)</span>), <em>critical dampening</em> <span class="math inline">\(\zeta = 1,\ z = -\omega_0\)</span>, and <em>underdamped</em> <span class="math inline">\(0 \le \zeta &lt; 1,\ z = \omega_0 \exp (i\xi)\)</span>.</p>
-<p>In the underdamped case,</p>
+<p><span class="math display">\[z_{\pm} = \omega_0\left(-\zeta \pm \sqrt{\zeta^2 - 1}\right).\]</span></p>
+<p>and thus the general solution:</p>
+<p><span class="math display">\[y(t) = A \exp(z_+ t) + B \exp(z_- t) \ : \zeta \neq 1 \]</span> <span class="math display">\[y(t) = (A + Bt) \exp(-\omega_0 t) : \zeta = 1 \]</span></p>
+<p>This dynamical system has three qualitatively different solutions, each of them depending on the sign of the contents of the square root. Particularly, if the contents of the square root are negative, the two possible values for <span class="math inline">\(z\)</span> will be complex numbers, making oscillations possible. More specifically, the three cases are:</p>
+<ul>
+<li><em>overdamped</em> (<span class="math inline">\(\zeta &gt; 1\)</span> and, thus, both <span class="math inline">\(z\)</span> are real numbers)</li>
+<li><em>critical dampening</em> (<span class="math inline">\(\zeta = 1\)</span> and <span class="math inline">\(z\)</span> is real and equal to <span class="math inline">\(-\omega_0\)</span>)</li>
+<li><em>underdamped</em> (<span class="math inline">\(\mid \zeta \mid &lt; 1\)</span>, and <span class="math inline">\(z = -\omega_0\zeta \mp i \omega_0 \sqrt{1 - \zeta^2}\)</span>).</li>
+</ul>
+<p>The underdamped case is typically the most interesting one. In this case we have solutions of the form:</p>
 <p><span class="math display">\[y = A\quad \underbrace{\exp(-\omega_0\zeta t)}_{\rm dampening}\quad\underbrace{\exp(\pm i \omega_0 \sqrt{1 - \zeta^2} t)}_{\rm oscillation},\]</span></p>
 <p>Given an initial condition <span class="math inline">\(q_0 = 1, p_0 = 0\)</span>, the solution is computed as</p>
 <div class="annotated-code">

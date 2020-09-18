@@ -141,11 +141,20 @@ def harmonic_oscillator(omega_0: float, zeta: float) -> Problem:
 
 The damped harmonic oscillator has an exact solution, given the ansatz $y = A \exp(z t)$, we get
 
-$$z = \omega_0\left(-\zeta \pm \sqrt{\zeta^2 - 1}\right).$$
+$$z_{\pm} = \omega_0\left(-\zeta \pm \sqrt{\zeta^2 - 1}\right).$$
 
-There are three cases: *overdamped* ($\zeta > 1$), *critical dampening* $\zeta = 1,\ z = -\omega_0$, and *underdamped* $0 \le \zeta < 1,\ z = \omega_0 \exp (i\xi)$.
+and thus the general solution:
 
-In the underdamped case,
+$$y(t) = A \exp(z_+ t) + B \exp(z_- t) \ : \zeta \neq 1 $$
+$$y(t) = (A + Bt) \exp(-\omega_0 t) : \zeta = 1 $$
+
+This dynamical system has three qualitatively different solutions, each of them depending on the sign of the contents of the square root. Particularly, if the contents of the square root are negative, the two possible values for $z$ will be complex numbers, making oscillations possible. More specifically, the three cases are:
+
+- *overdamped* ($\zeta > 1$ and, thus, both $z$ are real numbers)
+- *critical dampening* ($\zeta = 1$ and $z$ is real and equal to $-\omega_0$)
+- *underdamped* ($\mid \zeta \mid < 1$, and $z = -\omega_0\zeta \mp i \omega_0 \sqrt{1 - \zeta^2}$).
+
+The underdamped case is typically the most interesting one. In this case we have solutions of the form:
 
 $$y = A\quad \underbrace{\exp(-\omega_0\zeta t)}_{\rm dampening}\quad\underbrace{\exp(\pm i \omega_0 \sqrt{1 - \zeta^2} t)}_{\rm oscillation},$$
 
