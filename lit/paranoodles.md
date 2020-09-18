@@ -27,7 +27,7 @@ Here $y$ can be a scalar value, a vector of values (say a `numpy` array), or any
 
 $$y_{n+1} = y_{n} + \Delta t f(y_{n}, t).$${#eq:euler-method}
 
-+@eq:euler-method is known as the *forward Euler method*. We can capture the *state* $y$ in an abstract class `Vector`
++@eq:euler-method is known as the *forward Euler method*. We can capture the *state* $y$ in an abstract class we'll call `Vector`. We chose this name because we expect this objects to share (some of) the arithmetic properties of mathematical vectors. Namely, we want to be able to add, subtract and scale them. The chunk below states this need of a basic arithmetic in the form of abstract methods.
 
 ``` {.python #abstract-types}
 class Vector(ABC):
@@ -52,6 +52,8 @@ class Vector(ABC):
     def __rmul__(self, other: float) -> Vector:
         return self * other
 ```
+
+_The implementation of the actual methods can be found below in this document._
 
 Note that we don't make a distinction here between a state vector and a vector representing a change in state. This may change in the future.
 

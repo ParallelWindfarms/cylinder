@@ -161,7 +161,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <p><span id="eq:ode" class="eqnos"><span class="math display">\[y&#39; = f(y, t).\]</span><span class="eqnos-number">(1)</span></span></p>
 <p>Here <span class="math inline">\(y\)</span> can be a scalar value, a vector of values (say a <code>numpy</code> array), or any expression of <em>state</em>. A naive implementation of an ODE integrator would be</p>
 <p><span id="eq:euler-method" class="eqnos"><span class="math display">\[y_{n+1} = y_{n} + \Delta t f(y_{n}, t).\]</span><span class="eqnos-number">(2)</span></span></p>
-<p>eq. <a href="#eq:euler-method">2</a> is known as the <em>forward Euler method</em>. We can capture the <em>state</em> <span class="math inline">\(y\)</span> in an abstract class <code>Vector</code></p>
+<p>eq. <a href="#eq:euler-method">2</a> is known as the <em>forward Euler method</em>. We can capture the <em>state</em> <span class="math inline">\(y\)</span> in an abstract class we’ll call <code>Vector</code>. We chose this name because we expect this objects to share (some of) the arithmetic properties of mathematical vectors. Namely, we want to be able to add, subtract and scale them. The chunk below states this need of a basic arithmetic in the form of abstract methods.</p>
 <div class="annotated-code">
 <p><span><em>«abstract-types»=</em></span></p>
 <div class="sourceCode" id="abstract-types"><pre class="sourceCode python"><code class="sourceCode python"><span id="abstract-types-1"><a href="#abstract-types-1" aria-hidden="true"></a><span class="kw">class</span> Vector(ABC):</span>
@@ -186,6 +186,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <span id="abstract-types-20"><a href="#abstract-types-20" aria-hidden="true"></a>    <span class="kw">def</span> <span class="fu">__rmul__</span>(<span class="va">self</span>, other: <span class="bu">float</span>) <span class="op">-&gt;</span> Vector:</span>
 <span id="abstract-types-21"><a href="#abstract-types-21" aria-hidden="true"></a>        <span class="cf">return</span> <span class="va">self</span> <span class="op">*</span> other</span></code></pre></div>
 </div>
+<p><em>The implementation of the actual methods can be found below in this document.</em></p>
 <p>Note that we don’t make a distinction here between a state vector and a vector representing a change in state. This may change in the future.</p>
 <p>An ODE is then given as a function taking a <code>Vector</code> and a <code>float</code> returning a <code>Vector</code>. We define the type <code>Problem</code>:</p>
 <div class="annotated-code">
