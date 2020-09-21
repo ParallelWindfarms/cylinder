@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import operator
-import adios2   # type: ignore
+import adios2
 
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from shutil import copytree, rmtree, copy
-from typing import List, Optional
 
 # from .utils import pushd
 
@@ -24,7 +23,7 @@ class BaseCase:
     do so on top of an available base case in the `0` slot."""
     root: Path
     case: str
-    fields: Optional[List[str]] = None
+    fields: List[str] = None
 
     @property
     def path(self):

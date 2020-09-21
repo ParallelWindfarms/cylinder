@@ -92,19 +92,18 @@ The last two steps will require the use of the `mapFields` utility in OpenFOAM a
 
 ## Vector
 
-- [ ] get rid of `PyFoam` in the vector definition, except for parsing config files
+The abstract `Vector`, defined below, represents any single state in the simulation. It consists of a `RunDirectory` and a time-frame.
 
 ``` {.python file=pintFoam/vector.py}
 from __future__ import annotations
 
 import operator
-import adios2   # type: ignore
+import adios2
 
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from shutil import copytree, rmtree, copy
-from typing import List, Optional
 
 # from .utils import pushd
 
@@ -115,11 +114,16 @@ from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type
 <<pintfoam-vector>>
 ```
 
-The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
-
-
 ### Base case
-We will operate on a `Vector`, the same way everything is done in OpenFOAM. Copy, paste and edit. This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory, namely `0`.
+We will operate on a `Vector` the same way everything is done in OpenFOAM, that is:
+
+1. Copy-paste a case (known as the base case)
+2. Edit the copy with new simulation parameters
+3. Run the simulation
+
+This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory containing the initial conditions, namely `0`. The simulation generates new folders containing the data corresponding to different times. The time is coded, somewhat uncomfortably, in the directory name (`0.01`, `0.02`, and so on).
+
+The class `Vector` takes care of all those details.
 
 ``` {.python #base-case}
 @dataclass
@@ -129,7 +133,7 @@ class BaseCase:
     do so on top of an available base case in the `0` slot."""
     root: Path
     case: str
-    fields: Optional[List[str]] = None
+    fields: List[str] = None
 
     @property
     def path(self):
@@ -154,7 +158,7 @@ class BaseCase:
             rmtree(path)
 ```
 
-If no name is given to a new vector, a random one is generated.
+In our implementation, if no name is given to a new vector, a random one is generated.
 
 ### Retrieving files and time directories
 Note that the `BaseCase` has a property `path`. The same property will be defined in `Vector`. We can use this common property to retrieve a `SolutionDirectory`, `ParameterFile` or `TimeDirectory`.
@@ -216,7 +220,7 @@ def read(self, field):
     return self.data().read(field)
 ```
 
-We clone a vector by creating a new vector and copying internal fields.
+We clone a vector by creating a new vector and copying the internal fields.
 
 - [ ] using Adios the location of a time-frame is different, copy `adiosData/{time}.bp*` instead
 
@@ -236,7 +240,12 @@ def clone(self):
     return x
 ```
 
-Applying an operator to a vector follows a generic recipe:
+In order to apply the parareal algorithm to our vectors (or indeed, any other algorithm worth that name), we need to define how to operate with them. Particularly, we'll need to implement:
+
+- Vector addition and subtraction (as we'll need to sum and subtract the results of applying the coarse and fine integrators)
+- Vector scaling (as the integrators involve scaling with the inverse of the step)
+
+In order to achieve this, first we'll write generic recipes for **any** operation between vectors and **any** operation between a scalar and a vector:
 
 ``` {.python #pintfoam-vector-operate}
 def _operate_vec_vec(self, other: Vector, op) -> Vector:
@@ -277,6 +286,7 @@ def _operate_vec_scalar(self, s: float, op) -> Vector:
     return x
 ```
 
+<<<<<<< HEAD
 ``` {.python #copy-attrs-and-bounds}
 all_fields = set(a_data.available_variables().keys())
 for k, v in a_data.available_attributes().items():
@@ -290,6 +300,9 @@ for f in all_fields - self.fields:
     dim = len(v.shape)
     x_data.write(f, v, shape=v.shape, start=[0]*dim, count=v.shape)
 ```
+=======
+_The conditional structures in the chunk above are due to the fact that uniform and non-uniform fields are stored in not mutually-compatible ways, forcing us to operate differently with them._
+>>>>>>> master
 
 We now have the tools to define vector addition, subtraction and scaling.
 
@@ -303,6 +316,8 @@ def __add__(self, other: Vector) -> Vector:
 def __mul__(self, scale: float) -> Vector:
     return self._operate_vec_scalar(scale, operator.mul)
 ```
+
+In the code chunk above we used the so-called magic methods. If we use a minus sign to subtract two vectors, the method `__sub__` is being executed under the hood.
 
 ### `setFields` utility
 
@@ -333,8 +348,6 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 
 ``` {.python file=pintFoam/solution.py}
 import subprocess
-import math
-from typing import Optional
 
 from .vector import (BaseCase, Vector, parameter_file)
 
@@ -370,8 +383,7 @@ def get_times(path):
          for s in (path / "adiosData").glob("*.bp")],
         key=float)
 
-def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
-         write_interval: Optional[int] = None) -> Vector:
+def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float) -> Vector:
     <<pintfoam-solution-function>>
 ```
 
@@ -380,7 +392,6 @@ The solver clones a new vector, sets the `controlDict`, runs the solver and then
 ``` {.python #pintfoam-solution-function}
 assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone()
-write_interval = write_interval or int(math.ceil((t_1 - t_0) / dt))
 <<set-control-dict>>
 <<run-solver>>
 <<return-result>>
@@ -392,11 +403,10 @@ write_interval = write_interval or int(math.ceil((t_1 - t_0) / dt))
 
 ``` {.python #set-control-dict}
 controlDict = parameter_file(y, "system/controlDict")
-controlDict.content['startFrom'] = "latestTime"
 controlDict.content['startTime'] = t_0
 controlDict.content['endTime'] = t_1
 controlDict.content['deltaT'] = dt
-controlDict.content['writeInterval'] = write_interval
+controlDict.content['writeInterval'] = 1
 controlDict.writeFile()
 ```
 
@@ -520,7 +530,3 @@ def pushd(path: Union[str, Path]):
     finally:
         os.chdir(prev)
 ```
-
-
-
-
