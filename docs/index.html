@@ -647,7 +647,10 @@ port <code>internalField</code> method to Adios.</li>
 <span id="pintfoam-vector-properties-15"><a href="#pintfoam-vector-properties-15"></a>    <span class="cf">return</span> <span class="va">self</span>.path <span class="op">/</span> <span class="st">&quot;adiosData&quot;</span> <span class="op">/</span> (<span class="va">self</span>.time <span class="op">+</span> <span class="st">&quot;.bp.dir&quot;</span>)</span>
 <span id="pintfoam-vector-properties-16"><a href="#pintfoam-vector-properties-16"></a></span>
 <span id="pintfoam-vector-properties-17"><a href="#pintfoam-vector-properties-17"></a><span class="kw">def</span> data(<span class="va">self</span>, mode<span class="op">=</span><span class="st">&quot;r&quot;</span>):</span>
-<span id="pintfoam-vector-properties-18"><a href="#pintfoam-vector-properties-18"></a>    <span class="cf">return</span> adios2.<span class="bu">open</span>(<span class="bu">str</span>(<span class="va">self</span>.filename), mode)</span></code></pre></div>
+<span id="pintfoam-vector-properties-18"><a href="#pintfoam-vector-properties-18"></a>    <span class="cf">return</span> adios2.<span class="bu">open</span>(<span class="bu">str</span>(<span class="va">self</span>.filename), mode)</span>
+<span id="pintfoam-vector-properties-19"><a href="#pintfoam-vector-properties-19"></a></span>
+<span id="pintfoam-vector-properties-20"><a href="#pintfoam-vector-properties-20"></a><span class="kw">def</span> read(<span class="va">self</span>, field):</span>
+<span id="pintfoam-vector-properties-21"><a href="#pintfoam-vector-properties-21"></a>    <span class="cf">return</span> <span class="va">self</span>.data().read(field)</span></code></pre></div>
 </div>
 <p>We clone a vector by creating a new vector and copying internal fields.</p>
 <ul>
@@ -671,12 +674,6 @@ using Adios the location of a time-frame is different, copy <code>adiosData/{tim
 <span id="pintfoam-vector-clone-13"><a href="#pintfoam-vector-clone-13"></a>    <span class="cf">return</span> x</span></code></pre></div>
 </div>
 <p>Applying an operator to a vector follows a generic recipe:</p>
-<ul>
-<li><input type="checkbox" disabled="" />
-port to adios</li>
-<li><input type="checkbox" disabled="" />
-see if the logic here can be faster with Adios, for instance, conversions to numpy arrays may slow things down, also <code>.val</code> member is part of PyFoam API.</li>
-</ul>
 <div class="annotated-code">
 <p><span><em>«pintfoam-vector-operate»=</em></span></p>
 <div class="sourceCode" id="pintfoam-vector-operate"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-operate-1"><a href="#pintfoam-vector-operate-1"></a><span class="kw">def</span> _operate_vec_vec(<span class="va">self</span>, other: Vector, op) <span class="op">-&gt;</span> Vector:</span>
@@ -684,22 +681,51 @@ see if the logic here can be faster with Adios, for instance, conversions to num
 <span id="pintfoam-vector-operate-3"><a href="#pintfoam-vector-operate-3"></a>    a_data <span class="op">=</span> <span class="va">self</span>.data()</span>
 <span id="pintfoam-vector-operate-4"><a href="#pintfoam-vector-operate-4"></a>    b_data <span class="op">=</span> other.data()</span>
 <span id="pintfoam-vector-operate-5"><a href="#pintfoam-vector-operate-5"></a>    x_data <span class="op">=</span> x.data(mode<span class="op">=</span><span class="st">&quot;w&quot;</span>)</span>
-<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
-<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7"></a>        a_f <span class="op">=</span> a_data.read(f)</span>
-<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8"></a>        b_f <span class="op">=</span> b_data.read(f)</span>
-<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9"></a>        x_f <span class="op">=</span> op(a_f, b_f)</span>
-<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10"></a>        x_data.write(f, x_f)</span>
-<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11"></a>    <span class="cf">return</span> x</span>
-<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12"></a></span>
-<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13"></a><span class="kw">def</span> _operate_vec_scalar(<span class="va">self</span>, s: <span class="bu">float</span>, op) <span class="op">-&gt;</span> Vector:</span>
-<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
-<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15"></a>    a_data <span class="op">=</span> <span class="va">self</span>.data()</span>
-<span id="pintfoam-vector-operate-16"><a href="#pintfoam-vector-operate-16"></a>    x_data <span class="op">=</span> x.data(mode<span class="op">=</span><span class="st">&quot;w&quot;</span>)</span>
-<span id="pintfoam-vector-operate-17"><a href="#pintfoam-vector-operate-17"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
-<span id="pintfoam-vector-operate-18"><a href="#pintfoam-vector-operate-18"></a>        a_f <span class="op">=</span> a_data.read(f)</span>
-<span id="pintfoam-vector-operate-19"><a href="#pintfoam-vector-operate-19"></a>        x_f <span class="op">=</span> op(a_f, s)</span>
-<span id="pintfoam-vector-operate-20"><a href="#pintfoam-vector-operate-20"></a>        x_data.write(f, x_f)</span>
-<span id="pintfoam-vector-operate-21"><a href="#pintfoam-vector-operate-21"></a>    <span class="cf">return</span> x</span></code></pre></div>
+<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6"></a></span>
+<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7"></a>    <span class="op">&lt;&lt;</span>copy<span class="op">-</span>attrs<span class="op">-</span><span class="kw">and</span><span class="op">-</span>bounds<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8"></a></span>
+<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
+<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10"></a>        a_f <span class="op">=</span> a_data.read(f)</span>
+<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11"></a>        b_f <span class="op">=</span> b_data.read(f)</span>
+<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12"></a>        x_f <span class="op">=</span> op(a_f, b_f)</span>
+<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13"></a>        dim <span class="op">=</span> <span class="bu">len</span>(x_f.shape)</span>
+<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14"></a>        x_data.write(f, x_f, shape<span class="op">=</span>x_f.shape, start<span class="op">=</span>[<span class="dv">0</span>]<span class="op">*</span>dim, count<span class="op">=</span>x_f.shape)</span>
+<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15"></a></span>
+<span id="pintfoam-vector-operate-16"><a href="#pintfoam-vector-operate-16"></a>    x_data.close()</span>
+<span id="pintfoam-vector-operate-17"><a href="#pintfoam-vector-operate-17"></a>    a_data.close()</span>
+<span id="pintfoam-vector-operate-18"><a href="#pintfoam-vector-operate-18"></a>    b_data.close()</span>
+<span id="pintfoam-vector-operate-19"><a href="#pintfoam-vector-operate-19"></a>    <span class="cf">return</span> x</span>
+<span id="pintfoam-vector-operate-20"><a href="#pintfoam-vector-operate-20"></a></span>
+<span id="pintfoam-vector-operate-21"><a href="#pintfoam-vector-operate-21"></a><span class="kw">def</span> _operate_vec_scalar(<span class="va">self</span>, s: <span class="bu">float</span>, op) <span class="op">-&gt;</span> Vector:</span>
+<span id="pintfoam-vector-operate-22"><a href="#pintfoam-vector-operate-22"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
+<span id="pintfoam-vector-operate-23"><a href="#pintfoam-vector-operate-23"></a>    a_data <span class="op">=</span> <span class="va">self</span>.data()</span>
+<span id="pintfoam-vector-operate-24"><a href="#pintfoam-vector-operate-24"></a>    x_data <span class="op">=</span> x.data(mode<span class="op">=</span><span class="st">&quot;w&quot;</span>)</span>
+<span id="pintfoam-vector-operate-25"><a href="#pintfoam-vector-operate-25"></a></span>
+<span id="pintfoam-vector-operate-26"><a href="#pintfoam-vector-operate-26"></a>    <span class="op">&lt;&lt;</span>copy<span class="op">-</span>attrs<span class="op">-</span><span class="kw">and</span><span class="op">-</span>bounds<span class="op">&gt;&gt;</span></span>
+<span id="pintfoam-vector-operate-27"><a href="#pintfoam-vector-operate-27"></a></span>
+<span id="pintfoam-vector-operate-28"><a href="#pintfoam-vector-operate-28"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
+<span id="pintfoam-vector-operate-29"><a href="#pintfoam-vector-operate-29"></a>        a_f <span class="op">=</span> a_data.read(f)</span>
+<span id="pintfoam-vector-operate-30"><a href="#pintfoam-vector-operate-30"></a>        x_f <span class="op">=</span> op(a_f, s)</span>
+<span id="pintfoam-vector-operate-31"><a href="#pintfoam-vector-operate-31"></a>        dim <span class="op">=</span> <span class="bu">len</span>(x_f.shape)</span>
+<span id="pintfoam-vector-operate-32"><a href="#pintfoam-vector-operate-32"></a>        x_data.write(f, x_f, shape<span class="op">=</span>x_f.shape, start<span class="op">=</span>[<span class="dv">0</span>]<span class="op">*</span>dim, count<span class="op">=</span>x_f.shape)</span>
+<span id="pintfoam-vector-operate-33"><a href="#pintfoam-vector-operate-33"></a></span>
+<span id="pintfoam-vector-operate-34"><a href="#pintfoam-vector-operate-34"></a>    x_data.close()</span>
+<span id="pintfoam-vector-operate-35"><a href="#pintfoam-vector-operate-35"></a>    a_data.close()</span>
+<span id="pintfoam-vector-operate-36"><a href="#pintfoam-vector-operate-36"></a>    <span class="cf">return</span> x</span></code></pre></div>
+</div>
+<div class="annotated-code">
+<p><span><em>«copy-attrs-and-bounds»=</em></span></p>
+<div class="sourceCode" id="copy-attrs-and-bounds"><pre class="sourceCode python"><code class="sourceCode python"><span id="copy-attrs-and-bounds-1"><a href="#copy-attrs-and-bounds-1"></a>all_fields <span class="op">=</span> <span class="bu">set</span>(a_data.available_variables().keys())</span>
+<span id="copy-attrs-and-bounds-2"><a href="#copy-attrs-and-bounds-2"></a><span class="cf">for</span> k, v <span class="kw">in</span> a_data.available_attributes().items():</span>
+<span id="copy-attrs-and-bounds-3"><a href="#copy-attrs-and-bounds-3"></a>    <span class="cf">if</span> v[<span class="st">&quot;Type&quot;</span>] <span class="op">==</span> <span class="st">&quot;string&quot;</span>:</span>
+<span id="copy-attrs-and-bounds-4"><a href="#copy-attrs-and-bounds-4"></a>        x_data.write_attribute(k, v[<span class="st">&quot;Value&quot;</span>])</span>
+<span id="copy-attrs-and-bounds-5"><a href="#copy-attrs-and-bounds-5"></a>    <span class="cf">else</span>:</span>
+<span id="copy-attrs-and-bounds-6"><a href="#copy-attrs-and-bounds-6"></a>        x_data.write_attribute(k, a_data.read_attribute(k))</span>
+<span id="copy-attrs-and-bounds-7"><a href="#copy-attrs-and-bounds-7"></a></span>
+<span id="copy-attrs-and-bounds-8"><a href="#copy-attrs-and-bounds-8"></a><span class="cf">for</span> f <span class="kw">in</span> all_fields <span class="op">-</span> <span class="va">self</span>.fields:</span>
+<span id="copy-attrs-and-bounds-9"><a href="#copy-attrs-and-bounds-9"></a>    v <span class="op">=</span> a_data.read(f)</span>
+<span id="copy-attrs-and-bounds-10"><a href="#copy-attrs-and-bounds-10"></a>    dim <span class="op">=</span> <span class="bu">len</span>(v.shape)</span>
+<span id="copy-attrs-and-bounds-11"><a href="#copy-attrs-and-bounds-11"></a>    x_data.write(f, v, shape<span class="op">=</span>v.shape, start<span class="op">=</span>[<span class="dv">0</span>]<span class="op">*</span>dim, count<span class="op">=</span>v.shape)</span></code></pre></div>
 </div>
 <p>We now have the tools to define vector addition, subtraction and scaling.</p>
 <div class="annotated-code">
@@ -740,14 +766,12 @@ add doc-string</li>
 <span id="cb19-2"><a href="#cb19-2"></a></span>
 <span id="cb19-3"><a href="#cb19-3"></a><span class="im">from</span> .vector <span class="im">import</span> (BaseCase, Vector, parameter_file)</span>
 <span id="cb19-4"><a href="#cb19-4"></a></span>
-<span id="cb19-5"><a href="#cb19-5"></a></span>
-<span id="cb19-6"><a href="#cb19-6"></a><span class="kw">def</span> run_block_mesh(case: BaseCase):</span>
-<span id="cb19-7"><a href="#cb19-7"></a>    subprocess.run(<span class="st">&quot;blockMesh&quot;</span>, cwd<span class="op">=</span>case.path, check<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb19-8"><a href="#cb19-8"></a></span>
-<span id="cb19-9"><a href="#cb19-9"></a></span>
-<span id="cb19-10"><a href="#cb19-10"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span><span class="bu">set</span><span class="op">-</span>fields<span class="op">&gt;&gt;</span></span>
-<span id="cb19-11"><a href="#cb19-11"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>epsilon<span class="op">&gt;&gt;</span></span>
-<span id="cb19-12"><a href="#cb19-12"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">&gt;&gt;</span></span></code></pre></div>
+<span id="cb19-5"><a href="#cb19-5"></a><span class="kw">def</span> run_block_mesh(case: BaseCase):</span>
+<span id="cb19-6"><a href="#cb19-6"></a>    subprocess.run(<span class="st">&quot;blockMesh&quot;</span>, cwd<span class="op">=</span>case.path, check<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-7"><a href="#cb19-7"></a></span>
+<span id="cb19-8"><a href="#cb19-8"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span><span class="bu">set</span><span class="op">-</span>fields<span class="op">&gt;&gt;</span></span>
+<span id="cb19-9"><a href="#cb19-9"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>epsilon<span class="op">&gt;&gt;</span></span>
+<span id="cb19-10"><a href="#cb19-10"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
 <p>The solver will write directories with floating-point valued names. This is a very bad idea by the folks at OpenFOAM, but it is one we’ll have to live with. Suppose you have a time-step of <span class="math inline">\(0.1\)</span>, what will be the names of the directories if you integrate from <span class="math inline">\(0\)</span> to <span class="math inline">\(0.5\)</span>?</p>
 <div class="sourceCode" id="cb20" data-session="0"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1"></a>[x <span class="op">*</span> <span class="fl">0.1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">6</span>)]</span></code></pre></div>
