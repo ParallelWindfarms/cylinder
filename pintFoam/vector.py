@@ -2,8 +2,8 @@
 # ~\~ begin <<lit/cylinder.md|pintFoam/vector.py>>[0]
 from __future__ import annotations
 
-import numpy as np
 import operator
+import adios2
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +23,7 @@ class BaseCase:
     do so on top of an available base case in the `0` slot."""
     root: Path
     case: str
+    fields: List[str] = None
 
     @property
     def path(self):
@@ -69,12 +70,22 @@ class Vector:
         return self.base.root / self.case
 
     @property
-    def files(self):
-        return time_directory(self).getFiles()
+    def fields(self):
+        return self.base.fields
 
-    def internalField(self, key):
-        return time_directory(self)[key] \
-            .getContent()['internalField']
+    @property
+    def filename(self):
+        return self.path / "adiosData" / (self.time + ".bp")
+
+    @property
+    def dirname(self):
+        return self.path / "adiosData" / (self.time + ".bp.dir")
+
+    def data(self, mode="r"):
+        return adios2.open(str(self.filename), mode)
+
+    def read(self, field):
+        return self.data().read(field)
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
     def clone(self):
@@ -83,11 +94,8 @@ class Vector:
         rmtree(x.path / "adiosData", ignore_errors=True)
         (x.path / "adiosData").mkdir()
         try:
-            copy(self.path / "adiosData" / (self.time + ".bp"),
-                 x.path / "adiosData")
-            pathname = self.time + ".bp.dir"
-            copytree(self.path / "adiosData" / pathname,
-                     x.path / "adiosData" / pathname)
+            copy(self.filename, x.path / "adiosData")
+            copytree(self.dirname, x.dirname)
         except OSError as e:
             # FIXME: Warn if this happens if self.time != "0"
             print(e)
@@ -96,37 +104,64 @@ class Vector:
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[0]
     def _operate_vec_vec(self, other: Vector, op) -> Vector:
-        for f in self.files:
-            a_f = self.internalField(f)
-            b_f = other.internalField(f)
+        x = self.clone()
+        a_data = self.data()
+        b_data = other.data()
+        x_data = x.data(mode="w")
 
-            if a_f.uniform and b_f.uniform:
-                x = self.clone()
-                x_content = time_directory(x)[f].getContent()
-                x_content['internalField'].val = op(a_f.val, b_f.val)
-            elif a_f.uniform:
-                x = other.clone()
-                x_content = time_directory(x)[f].getContent()
-                x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
+        # ~\~ begin <<lit/cylinder.md|copy-attrs-and-bounds>>[0]
+        all_fields = set(a_data.available_variables().keys())
+        for k, v in a_data.available_attributes().items():
+            if v["Type"] == "string":
+                x_data.write_attribute(k, v["Value"])
             else:
-                x = self.clone()
-                x_content = time_directory(x)[f].getContent()
-                x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
+                x_data.write_attribute(k, a_data.read_attribute(k))
 
-            x_content.writeFile()
+        for f in all_fields - self.fields:
+            v = a_data.read(f)
+            dim = len(v.shape)
+            x_data.write(f, v, shape=v.shape, start=[0]*dim, count=v.shape)
+        # ~\~ end
 
+        for f in self.fields:
+            a_f = a_data.read(f)
+            b_f = b_data.read(f)
+            x_f = op(a_f, b_f)
+            dim = len(x_f.shape)
+            x_data.write(f, x_f, shape=x_f.shape, start=[0]*dim, count=x_f.shape)
+
+        x_data.close()
+        a_data.close()
+        b_data.close()
         return x
 
     def _operate_vec_scalar(self, s: float, op) -> Vector:
         x = self.clone()
-        for f in self.files:
-            x_f = self.internalField(f)
-            x_content = time_directory(x)[f].getContent()
-            if x_f.shape == ():
-                x_content['internalField'].val = op(x_f, s)
+        a_data = self.data()
+        x_data = x.data(mode="w")
+
+        # ~\~ begin <<lit/cylinder.md|copy-attrs-and-bounds>>[0]
+        all_fields = set(a_data.available_variables().keys())
+        for k, v in a_data.available_attributes().items():
+            if v["Type"] == "string":
+                x_data.write_attribute(k, v["Value"])
             else:
-                x_content['internalField'].val[:] = op(x_f, s)
-            x_content.writeFile()
+                x_data.write_attribute(k, a_data.read_attribute(k))
+
+        for f in all_fields - self.fields:
+            v = a_data.read(f)
+            dim = len(v.shape)
+            x_data.write(f, v, shape=v.shape, start=[0]*dim, count=v.shape)
+        # ~\~ end
+
+        for f in self.fields:
+            a_f = a_data.read(f)
+            x_f = op(a_f, s)
+            dim = len(x_f.shape)
+            x_data.write(f, x_f, shape=x_f.shape, start=[0]*dim, count=x_f.shape)
+
+        x_data.close()
+        a_data.close()
         return x
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operators>>[0]

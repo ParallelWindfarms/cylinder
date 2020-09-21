@@ -4,10 +4,8 @@ import subprocess
 
 from .vector import (BaseCase, Vector, parameter_file)
 
-
 def run_block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
-
 
 # ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
 def setFields(v, *, defaultFieldValues, regions):

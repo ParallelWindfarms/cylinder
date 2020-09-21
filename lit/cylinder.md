@@ -97,8 +97,8 @@ The abstract `Vector`, defined below, represents any single state in the simulat
 ``` {.python file=pintFoam/vector.py}
 from __future__ import annotations
 
-import numpy as np
 import operator
+import adios2
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -133,6 +133,7 @@ class BaseCase:
     do so on top of an available base case in the `0` slot."""
     root: Path
     case: str
+    fields: List[str] = None
 
     @property
     def path(self):
@@ -201,12 +202,22 @@ def path(self):
     return self.base.root / self.case
 
 @property
-def files(self):
-    return time_directory(self).getFiles()
+def fields(self):
+    return self.base.fields
 
-def internalField(self, key):
-    return time_directory(self)[key] \
-        .getContent()['internalField']
+@property
+def filename(self):
+    return self.path / "adiosData" / (self.time + ".bp")
+
+@property
+def dirname(self):
+    return self.path / "adiosData" / (self.time + ".bp.dir")
+
+def data(self, mode="r"):
+    return adios2.open(str(self.filename), mode)
+
+def read(self, field):
+    return self.data().read(field)
 ```
 
 We clone a vector by creating a new vector and copying the internal fields.
@@ -220,11 +231,8 @@ def clone(self):
     rmtree(x.path / "adiosData", ignore_errors=True)
     (x.path / "adiosData").mkdir()
     try:
-        copy(self.path / "adiosData" / (self.time + ".bp"),
-             x.path / "adiosData")
-        pathname = self.time + ".bp.dir"
-        copytree(self.path / "adiosData" / pathname,
-                 x.path / "adiosData" / pathname)
+        copy(self.filename, x.path / "adiosData")
+        copytree(self.dirname, x.dirname)
     except OSError as e:
         # FIXME: Warn if this happens if self.time != "0"
         print(e)
@@ -239,46 +247,62 @@ In order to apply the parareal algorithm to our vectors (or indeed, any other al
 
 In order to achieve this, first we'll write generic recipes for **any** operation between vectors and **any** operation between a scalar and a vector:
 
-- [ ] port to adios
-- [ ] see if the logic here can be faster with Adios, for instance, conversions to numpy arrays may slow things down, also `.val` member is part of PyFoam API.
-
 ``` {.python #pintfoam-vector-operate}
 def _operate_vec_vec(self, other: Vector, op) -> Vector:
-    for f in self.files:
-        a_f = self.internalField(f)
-        b_f = other.internalField(f)
+    x = self.clone()
+    a_data = self.data()
+    b_data = other.data()
+    x_data = x.data(mode="w")
 
-        if a_f.uniform and b_f.uniform:
-            x = self.clone()
-            x_content = time_directory(x)[f].getContent()
-            x_content['internalField'].val = op(a_f.val, b_f.val)
-        elif a_f.uniform:
-            x = other.clone()
-            x_content = time_directory(x)[f].getContent()
-            x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
-        else:
-            x = self.clone()
-            x_content = time_directory(x)[f].getContent()
-            x_content['internalField'].val[:] = op(np.array(a_f.val), np.array(b_f.val))
+    <<copy-attrs-and-bounds>>
 
-        x_content.writeFile()
+    for f in self.fields:
+        a_f = a_data.read(f)
+        b_f = b_data.read(f)
+        x_f = op(a_f, b_f)
+        dim = len(x_f.shape)
+        x_data.write(f, x_f, shape=x_f.shape, start=[0]*dim, count=x_f.shape)
 
+    x_data.close()
+    a_data.close()
+    b_data.close()
     return x
 
 def _operate_vec_scalar(self, s: float, op) -> Vector:
     x = self.clone()
-    for f in self.files:
-        x_f = self.internalField(f)
-        x_content = time_directory(x)[f].getContent()
-        if x_f.shape == ():
-            x_content['internalField'].val = op(x_f, s)
-        else:
-            x_content['internalField'].val[:] = op(x_f, s)
-        x_content.writeFile()
+    a_data = self.data()
+    x_data = x.data(mode="w")
+
+    <<copy-attrs-and-bounds>>
+
+    for f in self.fields:
+        a_f = a_data.read(f)
+        x_f = op(a_f, s)
+        dim = len(x_f.shape)
+        x_data.write(f, x_f, shape=x_f.shape, start=[0]*dim, count=x_f.shape)
+
+    x_data.close()
+    a_data.close()
     return x
 ```
 
+<<<<<<< HEAD
+``` {.python #copy-attrs-and-bounds}
+all_fields = set(a_data.available_variables().keys())
+for k, v in a_data.available_attributes().items():
+    if v["Type"] == "string":
+        x_data.write_attribute(k, v["Value"])
+    else:
+        x_data.write_attribute(k, a_data.read_attribute(k))
+
+for f in all_fields - self.fields:
+    v = a_data.read(f)
+    dim = len(v.shape)
+    x_data.write(f, v, shape=v.shape, start=[0]*dim, count=v.shape)
+```
+=======
 _The conditional structures in the chunk above are due to the fact that uniform and non-uniform fields are stored in not mutually-compatible ways, forcing us to operate differently with them._
+>>>>>>> master
 
 We now have the tools to define vector addition, subtraction and scaling.
 
@@ -327,10 +351,8 @@ import subprocess
 
 from .vector import (BaseCase, Vector, parameter_file)
 
-
 def run_block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
-
 
 <<pintfoam-set-fields>>
 <<pintfoam-epsilon>>
