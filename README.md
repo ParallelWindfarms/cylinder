@@ -1,6 +1,6 @@
 ---
 title: Flow past a cylinder and Parareal
-author: Johan Hidding
+author: Johan Hidding and Pablo Rodríguez
 ---
 
 Aim: simulate the turbulent flow past a cylinder in OpenFOAM and parallelise with Parareal.
