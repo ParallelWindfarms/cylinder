@@ -98,12 +98,13 @@ The abstract `Vector`, defined below, represents any single state in the simulat
 from __future__ import annotations
 
 import operator
-import adios2
+import adios2   # type: ignore
 
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from shutil import copytree, rmtree, copy
+from typing import List, Optional
 
 # from .utils import pushd
 
@@ -133,7 +134,7 @@ class BaseCase:
     do so on top of an available base case in the `0` slot."""
     root: Path
     case: str
-    fields: List[str] = None
+    fields: Optional[List[str]] = None
 
     @property
     def path(self):
@@ -348,6 +349,8 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 
 ``` {.python file=pintFoam/solution.py}
 import subprocess
+import math
+from typing import Optional
 
 from .vector import (BaseCase, Vector, parameter_file)
 
@@ -383,7 +386,8 @@ def get_times(path):
          for s in (path / "adiosData").glob("*.bp")],
         key=float)
 
-def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float) -> Vector:
+def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
+         write_interval: Optional[int] = None) -> Vector:
     <<pintfoam-solution-function>>
 ```
 
@@ -392,6 +396,7 @@ The solver clones a new vector, sets the `controlDict`, runs the solver and then
 ``` {.python #pintfoam-solution-function}
 assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone()
+write_interval = write_interval or int(math.ceil((t_1 - t_0) / dt))
 <<set-control-dict>>
 <<run-solver>>
 <<return-result>>
@@ -403,10 +408,11 @@ y = x.clone()
 
 ``` {.python #set-control-dict}
 controlDict = parameter_file(y, "system/controlDict")
+controlDict.content['startFrom'] = "latestTime"
 controlDict.content['startTime'] = t_0
 controlDict.content['endTime'] = t_1
 controlDict.content['deltaT'] = dt
-controlDict.content['writeInterval'] = 1
+controlDict.content['writeInterval'] = write_interval
 controlDict.writeFile()
 ```
 
