@@ -47,6 +47,29 @@ def test_basic_pitzDaily(tmp_path):
     orig_vec = init_vec + diff_vec
     should_be_zero = end_vec - orig_vec
     for f in pitzDaily_fields:
-        f = should_be_zero.data().read(f)
-        assert np.all(np.abs(f) < 10e-6)
+        v = should_be_zero.data().read(f)
+        assert np.all(np.abs(v) < 1e-6)
+
+
+def test_restart(tmp_path):
+    path = Path(tmp_path) / "case0"
+    data = Path(".") / "test" / "cases" / "pitzDaily"
+    copytree(data, path / "base")
+
+    base_case = BaseCase(path, "base")
+    base_case.fields = pitzDaily_fields
+    run_block_mesh(base_case)
+
+    init_vec = base_case.new_vector()
+    check = foam("scalarTransportFoam", 0.01, init_vec, 0.0, 0.2)
+    assert (check.path / "adiosData" / "0.2.bp").exists()
+    end_vec = foam("scalarTransportFoam", 0.01, init_vec, 0.0, 0.1)
+    assert (end_vec.path / "adiosData" / "0.1.bp").exists()
+    init_vec = end_vec.clone()
+    end_vec = foam("scalarTransportFoam", 0.01, init_vec, 0.1, 0.2)
+    assert (end_vec.path / "adiosData" / "0.2.bp").exists()
+    diff = end_vec - check
+    for f in pitzDaily_fields:
+        v = diff.data().read(f)
+        assert np.all(np.abs(v) < 1e-6)
 # ~\~ end
