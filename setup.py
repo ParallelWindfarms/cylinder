@@ -31,7 +31,7 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics'],
 
-    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam'],
+    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing'],
     extras_require={
         'develop': [
             'pytest', 'pytest-cov', 'pytest-mypy', 'pytest-flake8',

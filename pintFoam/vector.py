@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import operator
-import adios2   # type: ignore
+import mmap
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from shutil import copytree, rmtree, copy
 from typing import List, Optional
 
+from byteparsing import parse_bytes, foam_file
 # from .utils import pushd
 
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile  # type: ignore
@@ -68,112 +70,66 @@ class Vector:
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-properties>>[0]
     @property
     def path(self):
+        """Case path, i.e. the path containing `system`, `constant` and snapshots."""
         return self.base.root / self.case
 
     @property
     def fields(self):
+        """All fields relevant to this base case."""
         return self.base.fields
 
     @property
-    def filename(self):
-        return self.path / "adiosData" / (self.time + ".bp")
-
-    @property
     def dirname(self):
-        return self.path / "adiosData" / (self.time + ".bp.dir")
+        """The path of this snapshot."""
+        return self.path / self.time
 
-    def data(self, mode="r"):
-        return adios2.open(str(self.filename), mode)
-
-    def read(self, field):
-        return self.data().read(field)
+    @contextmanager
+    def mmap_data(self, field):
+        """Context manager that yields a **mutable** reference to the data contained
+        in this snapshot. Mutations done to this array are mmapped to the disk directly."""
+        f = (self.path / field).open(mode="r+b")
+        with mmap.mmap(f.fileno(), 0) as mm:
+            content = parse_bytes(foam_file, mm)
+            yield content["data"]["internalField"]
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
     def clone(self):
+        """Clone this vector to a new one. The clone only contains this single snapshot."""
         x = self.base.new_vector()
         x.time = self.time
-        rmtree(x.path / "adiosData", ignore_errors=True)
-        (x.path / "adiosData").mkdir()
-        try:
-            copy(self.filename, x.path / "adiosData")
-            copytree(self.dirname, x.dirname)
-        except OSError as e:
-            # FIXME: Warn if this happens if self.time != "0"
-            print(e)
-            pass
+        rmtree(x.dirname, ignore_errors=True)
+        copytree(self.dirname, x.dirname)
         return x
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[0]
-    def _operate_vec_vec(self, other: Vector, op) -> Vector:
+    def zip_with(self, other: Vector, op) -> Vector:
         x = self.clone()
-        a_data = self.data()
-        b_data = other.data()
-        x_data = x.data(mode="w")
-
         # ~\~ begin <<lit/cylinder.md|copy-attrs-and-bounds>>[0]
-        all_fields = set(a_data.available_variables().keys())
-        for k, v in a_data.available_attributes().items():
-            if v["Type"] == "string":
-                x_data.write_attribute(k, v["Value"])
-            else:
-                x_data.write_attribute(k, a_data.read_attribute(k))
-
-        for f in all_fields - self.fields:
-            v = a_data.read(f)
-            dim = len(v.shape)
-            x_data.write(f, v, shape=v.shape, start=[0]*dim, count=v.shape)
+        # We're back to mutating a clone, so no copying of attrs needed.
         # ~\~ end
 
         for f in self.fields:
-            a_f = a_data.read(f)
-            b_f = b_data.read(f)
-            x_f = op(a_f, b_f)
-            dim = len(x_f.shape)
-            x_data.write(f, x_f, shape=x_f.shape, start=[0]*dim, count=x_f.shape)
-
-        x_data.close()
-        a_data.close()
-        b_data.close()
+            with x.mmap_data(f) as a, other.mmap_data(f) as b:
+                a[:] = op(a, b)
         return x
 
-    def _operate_vec_scalar(self, s: float, op) -> Vector:
+    def map(self, f) -> Vector:
         x = self.clone()
-        a_data = self.data()
-        x_data = x.data(mode="w")
-
-        # ~\~ begin <<lit/cylinder.md|copy-attrs-and-bounds>>[0]
-        all_fields = set(a_data.available_variables().keys())
-        for k, v in a_data.available_attributes().items():
-            if v["Type"] == "string":
-                x_data.write_attribute(k, v["Value"])
-            else:
-                x_data.write_attribute(k, a_data.read_attribute(k))
-
-        for f in all_fields - self.fields:
-            v = a_data.read(f)
-            dim = len(v.shape)
-            x_data.write(f, v, shape=v.shape, start=[0]*dim, count=v.shape)
-        # ~\~ end
 
         for f in self.fields:
-            a_f = a_data.read(f)
-            x_f = op(a_f, s)
-            dim = len(x_f.shape)
-            x_data.write(f, x_f, shape=x_f.shape, start=[0]*dim, count=x_f.shape)
-
-        x_data.close()
-        a_data.close()
+            with x.mmap_data(f) as a:
+                a[:] = f(a)
         return x
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operators>>[0]
     def __sub__(self, other: Vector) -> Vector:
-        return self._operate_vec_vec(other, operator.sub)
+        return self.zip_with(other, operator.sub)
 
     def __add__(self, other: Vector) -> Vector:
-        return self._operate_vec_vec(other, operator.add)
+        return self.zip_with(other, operator.add)
 
     def __mul__(self, scale: float) -> Vector:
-        return self._operate_vec_scalar(scale, operator.mul)
+        return self.map(lambda x: x * scale)
     # ~\~ end
 # ~\~ end
 # ~\~ end

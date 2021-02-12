@@ -23,15 +23,35 @@ epsilon = 1e-6
 # ~\~ begin <<lit/cylinder.md|pintfoam-solution>>[0]
 
 def get_times(path):
-    def get_time(filepath):
-        return ".".join(filepath.name.split(".")[:-1])
+    """Get all the snapshots in a case, sorted on floating point value."""
+    def isfloat(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
     return sorted(
-        [get_time(s)
-         for s in (path / "adiosData").glob("*.bp")],
+        [s.name for s in path.iterdir() if isfloat(s.name)],
         key=float)
+
 
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
          write_interval: Optional[int] = None) -> Vector:
+    """Call an OpenFOAM code.
+
+    Args:
+        solver: The name of the solver (e.g. "icoFoam", "scalarTransportFoam" etc.)
+        dt:     deltaT parameter
+        x:      initial state
+        t_0:    startTime (should match that in initial state)
+        t_1:    endTime
+        write_interval: if not given, this is computed so that only the endTime
+                is written.
+
+    Returns:
+        The `Vector` representing the end state.
+    """
     # ~\~ begin <<lit/cylinder.md|pintfoam-solution-function>>[0]
     assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
     y = x.clone()
