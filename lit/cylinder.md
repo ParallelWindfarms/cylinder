@@ -92,7 +92,7 @@ The last two steps will require the use of the `mapFields` utility in OpenFOAM a
 
 ## Vector
 
-- [ ] get rid of `PyFoam` in the vector definition, except for parsing config files
+The abstract `Vector`, defined below, represents any single state in the simulation. It consists of a `RunDirectory` and a time-frame.
 
 ``` {.python file=pintFoam/vector.py}
 from __future__ import annotations
@@ -117,11 +117,16 @@ from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type
 <<pintfoam-vector>>
 ```
 
-The abstract `Vector` representing any single state in the simulation consists of a `RunDirectory` and a time-frame.
-
-
 ### Base case
-We will operate on a `Vector`, the same way everything is done in OpenFOAM. Copy, paste and edit. This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory, namely `0`.
+We will operate on a `Vector` the same way everything is done in OpenFOAM, that is:
+
+1. Copy-paste a case (known as the base case)
+2. Edit the copy with new simulation parameters
+3. Run the simulation
+
+This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory containing the initial conditions, namely `0`. The simulation generates new folders containing the data corresponding to different times. The time is coded, somewhat uncomfortably, in the directory name (`0.01`, `0.02`, and so on).
+
+The class `Vector` takes care of all those details.
 
 ``` {.python #base-case}
 @dataclass
@@ -156,7 +161,7 @@ class BaseCase:
             rmtree(path)
 ```
 
-If no name is given to a new vector, a random one is generated.
+In our implementation, if no name is given to a new vector, a random one is generated.
 
 ### Retrieving files and time directories
 Note that the `BaseCase` has a property `path`. The same property will be defined in `Vector`. We can use this common property to retrieve a `SolutionDirectory`, `ParameterFile` or `TimeDirectory`.
@@ -220,7 +225,7 @@ def mmap_data(self, field):
         yield content["data"]["internalField"]
 ```
 
-We clone a vector by creating a new vector and copying internal fields.
+We clone a vector by creating a new vector and copying the internal fields.
 
 - [ ] using Adios the location of a time-frame is different, copy `adiosData/{time}.bp*` instead
 
@@ -234,7 +239,12 @@ def clone(self):
     return x
 ```
 
-Applying an operator to a vector follows a generic recipe:
+In order to apply the parareal algorithm to our vectors (or indeed, any other algorithm worth that name), we need to define how to operate with them. Particularly, we'll need to implement:
+
+- Vector addition and subtraction (as we'll need to sum and subtract the results of applying the coarse and fine integrators)
+- Vector scaling (as the integrators involve scaling with the inverse of the step)
+
+In order to achieve this, first we'll write generic recipes for **any** operation between vectors and **any** operation between a scalar and a vector:
 
 ``` {.python #pintfoam-vector-operate}
 def zip_with(self, other: Vector, op) -> Vector:
@@ -255,9 +265,13 @@ def map(self, f) -> Vector:
     return x
 ```
 
+<<<<<<< HEAD
 ``` {.python #copy-attrs-and-bounds}
 # We're back to mutating a clone, so no copying of attrs needed.
 ```
+=======
+_The conditional structures in the chunk above are due to the fact that uniform and non-uniform fields are stored in not mutually-compatible ways, forcing us to operate differently with them._
+>>>>>>> master
 
 We now have the tools to define vector addition, subtraction and scaling.
 
@@ -271,6 +285,8 @@ def __add__(self, other: Vector) -> Vector:
 def __mul__(self, scale: float) -> Vector:
     return self.map(lambda x: x * scale)
 ```
+
+In the code chunk above we used the so-called magic methods. If we use a minus sign to subtract two vectors, the method `__sub__` is being executed under the hood.
 
 ### `setFields` utility
 
@@ -508,7 +524,3 @@ def pushd(path: Union[str, Path]):
     finally:
         os.chdir(prev)
 ```
-
-
-
-
