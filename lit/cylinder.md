@@ -219,7 +219,7 @@ def dirname(self):
 def mmap_data(self, field):
     """Context manager that yields a **mutable** reference to the data contained
     in this snapshot. Mutations done to this array are mmapped to the disk directly."""
-    f = (self.path / field).open(mode="r+b")
+    f = (self.dirname / field).open(mode="r+b")
     with mmap.mmap(f.fileno(), 0) as mm:
         content = parse_bytes(foam_file, mm)
         yield content["data"]["internalField"]
