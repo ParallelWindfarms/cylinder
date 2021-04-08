@@ -337,7 +337,7 @@ meaning, we write a function taking a current state `Vector`, the time *now*, an
 ``` {.python file=pintFoam/solution.py}
 import subprocess
 import math
-from typing import Optional
+from typing import Optional, Union
 
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
@@ -365,7 +365,7 @@ Our solution depends on the solver chosen and the given time-step:
 
 ``` {.python #pintfoam-solution}
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
-         write_interval: Optional[int] = None) -> Vector:
+         write_interval: Optional[Union[int,float]] = None) -> Vector:
     """Call an OpenFOAM code.
 
     Args:
@@ -388,7 +388,7 @@ The solver clones a new vector, sets the `controlDict`, runs the solver and then
 ``` {.python #pintfoam-solution-function}
 assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone()
-write_interval = write_interval or dt
+write_interval = write_interval or (1 if solver == "scalarTransportFoam" else dt)
 <<set-control-dict>>
 <<run-solver>>
 <<return-result>>
