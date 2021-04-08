@@ -177,6 +177,20 @@ def parameter_file(case, relative_path):
 
 def time_directory(case):
     return solution_directory(case)[case.time]
+
+
+def get_times(path):
+    """Get all the snapshots in a case, sorted on floating point value."""
+    def isfloat(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    return sorted(
+        [s.name for s in path.iterdir() if isfloat(s.name)],
+        key=float)
 ```
 
 ### Vector
@@ -214,6 +228,11 @@ def fields(self):
 def dirname(self):
     """The path of this snapshot."""
     return self.path / self.time
+
+def all_times(self):
+    """Get all available times, in order."""
+    return [Vector(self.base, self.case, t)
+            for t in get_times(self.path)]
 
 @contextmanager
 def mmap_data(self, field):
@@ -320,7 +339,7 @@ import subprocess
 import math
 from typing import Optional
 
-from .vector import (BaseCase, Vector, parameter_file)
+from .vector import (BaseCase, Vector, parameter_file, get_times)
 
 def run_block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
@@ -345,21 +364,6 @@ epsilon = 1e-6
 Our solution depends on the solver chosen and the given time-step:
 
 ``` {.python #pintfoam-solution}
-
-def get_times(path):
-    """Get all the snapshots in a case, sorted on floating point value."""
-    def isfloat(s: str) -> bool:
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-
-    return sorted(
-        [s.name for s in path.iterdir() if isfloat(s.name)],
-        key=float)
-
-
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
          write_interval: Optional[int] = None) -> Vector:
     """Call an OpenFOAM code.
@@ -384,7 +388,7 @@ The solver clones a new vector, sets the `controlDict`, runs the solver and then
 ``` {.python #pintfoam-solution-function}
 assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone()
-write_interval = write_interval or int(math.ceil((t_1 - t_0) / dt))
+write_interval = write_interval or dt
 <<set-control-dict>>
 <<run-solver>>
 <<return-result>>

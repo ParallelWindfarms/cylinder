@@ -49,7 +49,7 @@ def test_basic_pitzDaily(tmp_path):
             assert np.all(np.abs(v) < 1e-6)
 
 
-def dont_test_restart(tmp_path):
+def test_restart(tmp_path):
     path = Path(tmp_path) / "case0"
     data = Path(".") / "test" / "cases" / "pitzDaily"
     copytree(data, path / "base")

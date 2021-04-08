@@ -59,6 +59,20 @@ def parameter_file(case, relative_path):
 
 def time_directory(case):
     return solution_directory(case)[case.time]
+
+
+def get_times(path):
+    """Get all the snapshots in a case, sorted on floating point value."""
+    def isfloat(s: str) -> bool:
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+    return sorted(
+        [s.name for s in path.iterdir() if isfloat(s.name)],
+        key=float)
 # ~\~ end
 # ~\~ begin <<lit/cylinder.md|pintfoam-vector>>[1]
 @dataclass
@@ -82,6 +96,11 @@ class Vector:
     def dirname(self):
         """The path of this snapshot."""
         return self.path / self.time
+
+    def all_times(self):
+        """Get all available times, in order."""
+        return [Vector(self.base, self.case, t)
+                for t in get_times(self.path)]
 
     @contextmanager
     def mmap_data(self, field):

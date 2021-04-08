@@ -4,7 +4,7 @@ import subprocess
 import math
 from typing import Optional
 
-from .vector import (BaseCase, Vector, parameter_file)
+from .vector import (BaseCase, Vector, parameter_file, get_times)
 
 def run_block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
@@ -21,21 +21,6 @@ def setFields(v, *, defaultFieldValues, regions):
 epsilon = 1e-6
 # ~\~ end
 # ~\~ begin <<lit/cylinder.md|pintfoam-solution>>[0]
-
-def get_times(path):
-    """Get all the snapshots in a case, sorted on floating point value."""
-    def isfloat(s: str) -> bool:
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-
-    return sorted(
-        [s.name for s in path.iterdir() if isfloat(s.name)],
-        key=float)
-
-
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
          write_interval: Optional[int] = None) -> Vector:
     """Call an OpenFOAM code.
@@ -55,7 +40,7 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
     # ~\~ begin <<lit/cylinder.md|pintfoam-solution-function>>[0]
     assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
     y = x.clone()
-    write_interval = write_interval or int(math.ceil((t_1 - t_0) / dt))
+    write_interval = write_interval or dt
     # ~\~ begin <<lit/cylinder.md|set-control-dict>>[0]
     controlDict = parameter_file(y, "system/controlDict")
     controlDict.content['startFrom'] = "latestTime"
