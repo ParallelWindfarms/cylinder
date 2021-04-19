@@ -1,0 +1,20 @@
+on: [push]
+
+jobs:
+  openfoam_job:
+    runs-on: ubuntu-latest
+    container: openfoamplus/of_v1906_centos73
+    name: A job to test OpenFOAM
+    steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v2
+    - name: Install tree
+      id: tree
+      run: yum install -y tree
+    - name: Take a look
+      id: look
+      run: tree -L 2
+    - name: Use OpenFOAM
+      id: openfoam
+      run: ./run.sh
