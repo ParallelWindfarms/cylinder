@@ -1,7 +1,7 @@
 #!/bin/sh -l
 
+# Activate
 source /opt/OpenFOAM/setImage_v1906.sh
 
-cd data/cavity
-blockMesh
-icoFoam
+# Check installation
+blockMesh -help
