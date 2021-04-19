@@ -1,6 +1,7 @@
 #!/bin/sh -l
 
 # Activate environment
+source ~/miniconda3/etc/profile.d/conda.sh
 conda activate cylinder
 python --version
 
