@@ -104,7 +104,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
-from shutil import copytree, rmtree, copy
+from shutil import copytree, rmtree   # , copy
 from typing import List, Optional
 
 from byteparsing import parse_bytes, foam_file
@@ -315,7 +315,7 @@ We may want to call `setFields` on our `Vector` to setup some test cases.
 - [ ] add doc-string
 
 ``` {.python #pintfoam-set-fields}
-def setFields(v, *, defaultFieldValues, regions):
+def set_fields(v, *, defaultFieldValues, regions):
     x = parameter_file(v, "system/setFieldsDict")
     x['defaultFieldValues'] = defaultFieldValues
     x['regions'] = regions
@@ -341,7 +341,7 @@ from typing import Optional, Union
 
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
-def run_block_mesh(case: BaseCase):
+def block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
 
 <<pintfoam-set-fields>>
@@ -487,6 +487,37 @@ def registry():
     return serial.base() + serial.numpy()
 ```
 
+# The User script
+As the final bit, the user should write a (minimal) script for running the simulation. Here we write an example script in the `data` folder. There should be no reusable parts in this script, or they should go into either the `paranoodles` or `pintFoam` module.
+
+Time for a bit of wishful programming
+
+``` {.python file=data/run.py}
+from pathlib import Path
+import numpy as np
+from paranoodles import (schedule, run, parareal, tabulate)
+from pintFoam import (BaseCase, foam, block_mesh, serial)
+
+
+case = BaseCase(Path("c1"), "baseCase")
+block_mesh(case)
+
+
+@schedule
+def fine(x, t_0, t_1):
+    return foam("icoFoam", 0.05, x, t_0, t_1)
+
+
+@schedule
+def coarse(x, t_0, t_1):
+    return foam("icoFoam", 0.2, x, t_0, t_1)
+
+
+times = np.linspace(0.0, 10.0, 100)
+init = foam("icoFoam", 0.05, case.new_vector(), 0.0, 0.0)
+tabulate(parareal(coarse, fine), init, times)
+```
+
 # Appendix A: Utils
 
 ``` {.python file=pintFoam/utils.py}
@@ -496,14 +527,19 @@ def registry():
 ## Cleaning up
 
 ``` {.python file=pintFoam/clean.py}
-import sys
+import argh  # type:ignore
 from pathlib import Path
 from .vector import BaseCase
 
-if __name__ == "__main__":
-    target = sys.argv[1]
-    base_case = sys.argv[2]
+
+@argh.arg("target", help="target path to clean")
+@argh.arg("--base_case", help="name of the base-case")
+def main(target: Path, base_case: str = "baseCase"):
     BaseCase(Path(target), base_case).clean()
+
+
+if __name__ == "__main__":
+    argh.dispatch_command(main)
 ```
 
 ## `pushd`

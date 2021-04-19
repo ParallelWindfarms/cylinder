@@ -1,36 +1,30 @@
 # ~\~ language=Python filename=paranoodles/abstract.py
 # ~\~ begin <<lit/paranoodles.md|paranoodles/abstract.py>>[0]
 from __future__ import annotations  # enable self-reference in type annotations
-from typing import Callable
+from typing import (Callable, Protocol, TypeVar)
 from abc import (ABC, abstractmethod)
 
 # ~\~ begin <<lit/paranoodles.md|abstract-types>>[0]
-class Vector(ABC):
-    """Abstract base class for state variable of a problem.
-    This should support simple arithmetic operations."""
-    @abstractmethod
-    def __add__(self, other: Vector) -> Vector:
-        """Summation of two result vectors."""
-        pass
+TVector = TypeVar("TVector", bound="Vector")
 
-    @abstractmethod
-    def __sub__(self, other: Vector) -> Vector:
-        """Difference between two result vectors."""
-        pass
+class Vector(Protocol):
+    def __add__(self: TVector, other: TVector) -> TVector:
+        ...
 
-    @abstractmethod
-    def __mul__(self, other: float) -> Vector:
-        """Scale vector with scalar."""
-        pass
+    def __sub__(self: TVector, other: TVector) -> TVector:
+        ...
 
-    @abstractmethod
-    def __rmul__(self, other: float) -> Vector:
-        return self * other
+    def __mul__(self: TVector, other: float) -> TVector:
+        ...
+
+    def __rmul__(self: TVector, other: float) -> TVector:
+        ...
+
 # ~\~ end
 # ~\~ begin <<lit/paranoodles.md|abstract-types>>[1]
-Problem = Callable[[Vector, float], Vector]
+Problem = Callable[[TVector, float], TVector]
 # ~\~ end
 # ~\~ begin <<lit/paranoodles.md|abstract-types>>[2]
-Solution = Callable[[Vector, float, float], Vector]
+Solution = Callable[[TVector, float, float], TVector]
 # ~\~ end
 # ~\~ end

@@ -5,7 +5,7 @@ from shutil import copytree
 import numpy as np
 
 from pintFoam.vector import BaseCase
-from pintFoam.solution import (run_block_mesh, foam)
+from pintFoam.solution import (block_mesh, foam)
 
 pitzDaily_fields = {
     "T", "U", "phi"
@@ -18,7 +18,7 @@ def test_basic_pitzDaily(tmp_path):
 
     base_case = BaseCase(path, "base")
     base_case.fields = pitzDaily_fields
-    run_block_mesh(base_case)
+    block_mesh(base_case)
 
     base_vec = base_case.new_vector()
     init_vec = foam("scalarTransportFoam", 0.001, base_vec, 0.0, 0.001)
@@ -54,7 +54,7 @@ def test_restart(tmp_path):
 
     base_case = BaseCase(path, "base")
     base_case.fields = pitzDaily_fields
-    run_block_mesh(base_case)
+    block_mesh(base_case)
 
     init_vec = base_case.new_vector()
     check = foam("scalarTransportFoam", 0.01, init_vec, 0.0, 0.2)

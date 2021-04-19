@@ -6,11 +6,11 @@ from typing import Optional, Union
 
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
-def run_block_mesh(case: BaseCase):
+def block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
 
 # ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
-def setFields(v, *, defaultFieldValues, regions):
+def set_fields(v, *, defaultFieldValues, regions):
     x = parameter_file(v, "system/setFieldsDict")
     x['defaultFieldValues'] = defaultFieldValues
     x['regions'] = regions

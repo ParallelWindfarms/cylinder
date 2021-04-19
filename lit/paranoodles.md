@@ -3,8 +3,12 @@
 ``` {.python file=paranoodles/__init__.py}
 from .tabulate_solution import tabulate
 from .parareal import parareal
+from . import abstract
 
-__all__ = ['tabulate', 'parareal']
+from noodles import schedule
+from noodles.run.threading.sqlite3 import run_parallel as run
+
+__all__ = ["tabulate", "parareal", "schedule", "run", "abstract", "schedule"]
 ```
 
 # Problem statement
@@ -13,7 +17,7 @@ I tried to implement the problem statement using abstract base classes (`ABC` mo
 
 ``` {.python file=paranoodles/abstract.py}
 from __future__ import annotations  # enable self-reference in type annotations
-from typing import Callable
+from typing import (Callable, Protocol, TypeVar)
 from abc import (ABC, abstractmethod)
 
 <<abstract-types>>
@@ -30,27 +34,21 @@ $$y_{n+1} = y_{n} + \Delta t f(y_{n}, t).$${#eq:euler-method}
 +@eq:euler-method is known as the *forward Euler method*. We can capture the *state* $y$ in an abstract class we'll call `Vector`. We chose this name because we expect this objects to share (some of) the arithmetic properties of mathematical vectors. Namely, we want to be able to add, subtract and scale them. The chunk below states this need of a basic arithmetic in the form of abstract methods.
 
 ``` {.python #abstract-types}
-class Vector(ABC):
-    """Abstract base class for state variable of a problem.
-    This should support simple arithmetic operations."""
-    @abstractmethod
-    def __add__(self, other: Vector) -> Vector:
-        """Summation of two result vectors."""
-        pass
+TVector = TypeVar("TVector", bound="Vector")
 
-    @abstractmethod
-    def __sub__(self, other: Vector) -> Vector:
-        """Difference between two result vectors."""
-        pass
+class Vector(Protocol):
+    def __add__(self: TVector, other: TVector) -> TVector:
+        ...
 
-    @abstractmethod
-    def __mul__(self, other: float) -> Vector:
-        """Scale vector with scalar."""
-        pass
+    def __sub__(self: TVector, other: TVector) -> TVector:
+        ...
 
-    @abstractmethod
-    def __rmul__(self, other: float) -> Vector:
-        return self * other
+    def __mul__(self: TVector, other: float) -> TVector:
+        ...
+
+    def __rmul__(self: TVector, other: float) -> TVector:
+        ...
+
 ```
 
 _The implementation of the actual methods can be found below in this document._
@@ -60,7 +58,7 @@ Note that we don't make a distinction here between a state vector and a vector r
 An ODE is then given as a function taking a `Vector` (the state $y$) and a `float` (the time $t$) returning a `Vector` (the derivative $y' = f(y,t)$ evaluated at $(y,t)$). We define the type `Problem`:
 
 ``` {.python #abstract-types}
-Problem = Callable[[Vector, float], Vector]
+Problem = Callable[[TVector, float], TVector]
 ```
 
 In mathematical notation the snippet above means:
@@ -70,7 +68,7 @@ $$Problem : (y, t) \longrightarrow f(y, t) = y'$$
 If we have a `Problem`, we're after a `Solution`: a function that, given an initial `Vector` (the initial condition $y_0$), initial time ($t_0$) and final time ($t$), gives the resulting `Vector` (the solution, $y(t)$ for the given initial conditions).
 
 ``` {.python #abstract-types}
-Solution = Callable[[Vector, float, float], Vector]
+Solution = Callable[[TVector, float, float], TVector]
 ```
 
 Those readers more familiar with classical physics or mathematics may notice that our `Problem` object corresponds with the function $f$ in (+@eq:ode). The `Solution` object, on the other hand, corresponds with the evolution operator $\phi$ in equation @eq:solution.
