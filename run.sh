@@ -3,7 +3,8 @@
 # Activate environment
 source ~/miniconda3/etc/profile.d/conda.sh
 conda info --envs
-conda activate
+conda activate cylinder
+conda info --envs
 python --version
 
 # Activate OpenFOAM
