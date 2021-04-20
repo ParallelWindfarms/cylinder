@@ -6,14 +6,18 @@ jobs:
     container: openfoamplus/of_v1906_centos73
     name: A job to test OpenFOAM
     steps:
-    - name: Install Git and Tree
-      id: install-git
-      run: yum install -y git tree
-    - name: Checkout
-      id: checkout
+    - name: Checkout this
+      id: checkout-this
+      uses: actions/checkout@v2
+    - name: Checkout byteparsing
+      id: checkout-byteparsing
       uses: actions/checkout@v2
       with:
-        submodules: true
+        repository: parallelwindfarms/byteparsing
+        path: byteparsing
+    - name: Install tree
+      id: tree
+      run: yum install -y tree
     - name: Take a look
       id: look
       run: tree -L 2
