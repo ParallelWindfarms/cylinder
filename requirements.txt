@@ -1,2 +1,4 @@
 PyFoam
-jupyterlab
+./byteparsing
+./paranoodles
+
