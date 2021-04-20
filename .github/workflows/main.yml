@@ -6,14 +6,14 @@ jobs:
     container: openfoamplus/of_v1906_centos73
     name: A job to test OpenFOAM
     steps:
+    - name: Install Git and Tree
+      id: install-git
+      run: yum check-update && yum install -y git tree
     - name: Checkout
       id: checkout
       uses: actions/checkout@v2
       with:
         submodules: true
-    - name: Install tree
-      id: tree
-      run: yum install -y tree
     - name: Take a look
       id: look
       run: tree -L 2
