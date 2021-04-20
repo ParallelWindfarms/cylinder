@@ -4,3 +4,6 @@
 [submodule "paranoodles"]
 	path = paranoodles
 	url = git@github.com:parallelwindfarms/paranoodles
+[submodule "byteparsing"]
+	path = byteparsing
+	url = git@github.com:parallelwindfarms/byteparsing
