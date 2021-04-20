@@ -21,6 +21,9 @@ jobs:
     - name: Create conda environment
       id: create-environment
       run: source ~/miniconda3/etc/profile.d/conda.sh && conda env create --file=environments.yml
+    - name: Install package
+      id: install-this
+      run: source ~/miniconda3/etc/profile.d/conda.sh && conda activate cylinder && pip install -e .[develop]
     - name: Use OpenFOAM
       id: openfoam
       run: ./run.sh

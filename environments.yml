@@ -1,3 +1,4 @@
 name: cylinder
 dependencies:
   - numpy
+  - sphinx-rtd-theme
