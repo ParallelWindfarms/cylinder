@@ -12,4 +12,5 @@ source /opt/OpenFOAM/setImage_v1906.sh
 blockMesh -help
 
 # Test
+pip install -r requirements.txt
 pytest
