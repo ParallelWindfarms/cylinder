@@ -31,9 +31,7 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics'],
 
-    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing-git', 'paranoodles-git', 'numpy'],
-    dependency_links=['byteparsing-git @ https://github.com/parallelwindfarms/byteparsing/archive/master.zip#egg=byteparsing-git-1.0.0',
-                      'paranoodles-git @ https://github.com/parallelwindfarms/paranoodles/archive/master.zip#egg=paranoodles-git-1.0.0'],
+    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'numpy'],
     extras_require={
         'develop': [
             'pytest', 'pytest-cov', 'pytest-mypy', 'pytest-flake8',
