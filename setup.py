@@ -19,7 +19,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Johan Hidding',
-    url='https://github.com/ParallelWindfarms/paranoodles',
+    url='https://github.com/parallelwindfarms/cylinder',
     packages=find_packages(exclude=['test*']),
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
@@ -31,7 +31,7 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics'],
 
-    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing', 'paranoodles', 'numpy'],
+    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing==1.0', 'paranoodles==1.0', 'numpy'],
     dependency_links=['http://github.com/parallelwindfarms/byteparsing/tarball/master#egg=byteparsing-1.0',
                       'http://github.com/parallelwindfarms/paranoodles/tarball/master#egg=paranoodles-1.0'],
     extras_require={
