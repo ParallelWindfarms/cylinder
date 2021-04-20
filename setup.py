@@ -32,8 +32,8 @@ setup(
         'Topic :: Scientific/Engineering :: Physics'],
 
     install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing', 'paranoodles', 'numpy'],
-    dependency_links=['http://github.com/parallelwindfarms/byteparsing/tarball/master#egg=package-1.0',
-                      'http://github.com/parallelwindfarms/paranoodles/tarball/master#egg=package-1.0'],
+    dependency_links=['http://github.com/parallelwindfarms/byteparsing/tarball/master#egg=byteparsing-1.0',
+                      'http://github.com/parallelwindfarms/paranoodles/tarball/master#egg=paranoodles-1.0'],
     extras_require={
         'develop': [
             'pytest', 'pytest-cov', 'pytest-mypy', 'pytest-flake8',
