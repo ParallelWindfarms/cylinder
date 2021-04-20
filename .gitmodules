@@ -1,3 +1,6 @@
 [submodule "bootstrap"]
 	path = bootstrap
 	url = git@github.com:entangled/bootstrap-submodule
+[submodule "paranoodles"]
+	path = paranoodles
+	url = git@github.com:parallelwindfarms/paranoodles
