@@ -31,11 +31,11 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics'],
 
-    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing'],
+    install_requires=['noodles[xenon,numpy]', 'scipy', 'PyFoam', 'byteparsing', 'paranoodles', 'numpy'],
     extras_require={
         'develop': [
             'pytest', 'pytest-cov', 'pytest-mypy', 'pytest-flake8',
-            'mypy', 'coverage', 'pep8', 'numpy', 'tox',
+            'mypy', 'coverage', 'pep8', 'tox',
             'sphinx', 'sphinx_rtd_theme', 'nbsphinx', 'flake8'],
     },
 )

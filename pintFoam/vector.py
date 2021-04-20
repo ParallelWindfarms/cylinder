@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
-from shutil import copytree, rmtree, copy
+from shutil import copytree, rmtree   # , copy
 from typing import List, Optional
 
 from byteparsing import parse_bytes, foam_file
