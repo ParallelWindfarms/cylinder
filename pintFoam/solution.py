@@ -22,7 +22,8 @@ epsilon = 1e-6
 # ~\~ end
 # ~\~ begin <<lit/cylinder.md|pintfoam-solution>>[0]
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
-         write_interval: Optional[Union[int,float]] = None) -> Vector:
+         write_interval: Optional[Union[int,float]] = None,
+         job_name: Optional[str] = None) -> Vector:
     """Call an OpenFOAM code.
 
     Args:
@@ -39,7 +40,7 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
     """
     # ~\~ begin <<lit/cylinder.md|pintfoam-solution-function>>[0]
     assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
-    y = x.clone()
+    y = x.clone(job_name)
     write_interval = write_interval or (1 if solver == "scalarTransportFoam" else dt)
     # ~\~ begin <<lit/cylinder.md|set-control-dict>>[0]
     controlDict = parameter_file(y, "system/controlDict")

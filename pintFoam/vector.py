@@ -112,9 +112,9 @@ class Vector:
             yield content["data"]["internalField"]
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
-    def clone(self):
+    def clone(self, name: Optional[str]) -> Vector:
         """Clone this vector to a new one. The clone only contains this single snapshot."""
-        x = self.base.new_vector()
+        x = self.base.new_vector(name)
         x.time = self.time
         rmtree(x.dirname, ignore_errors=True)
         copytree(self.dirname, x.dirname)
