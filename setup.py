@@ -19,7 +19,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Johan Hidding',
-    url='https://github.com/ParallelWindfarms/paranoodles',
+    url='https://github.com/parallelwindfarms/cylinder',
     packages=find_packages(exclude=['test*']),
     classifiers=[
         'License :: OSI Approved :: Apache Software License',

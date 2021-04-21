@@ -10,3 +10,7 @@ python --version
 source /opt/OpenFOAM/setImage_v1906.sh
 # Check installation
 blockMesh -help
+
+# Test
+pip install -r requirements.txt
+pytest
