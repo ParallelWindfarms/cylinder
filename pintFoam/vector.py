@@ -32,7 +32,7 @@ class BaseCase:
     def path(self):
         return self.root / self.case
 
-    def new_vector(self, name=None):
+    def new_vector(self, name: Optional[str] = None):
         """Creates new `Vector` using this base case."""
         new_case = name or uuid4().hex
         new_path = self.root / new_case
@@ -112,7 +112,7 @@ class Vector:
             yield content["data"]["internalField"]
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
-    def clone(self, name: Optional[str]) -> Vector:
+    def clone(self, name: Optional[str] = None) -> Vector:
         """Clone this vector to a new one. The clone only contains this single snapshot."""
         x = self.base.new_vector(name)
         x.time = self.time
