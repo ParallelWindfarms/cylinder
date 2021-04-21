@@ -6,9 +6,21 @@ jobs:
     container: openfoamplus/of_v1906_centos73
     name: A job to test OpenFOAM
     steps:
-    - name: Checkout
-      id: checkout
+    - name: Checkout this
+      id: checkout-this
       uses: actions/checkout@v2
+    - name: Checkout byteparsing
+      id: checkout-byteparsing
+      uses: actions/checkout@v2
+      with:
+        repository: parallelwindfarms/byteparsing
+        path: byteparsing
+    - name: Checkout paranoodles
+      id: checkout-paranoodles
+      uses: actions/checkout@v2
+      with:
+        repository: parallelwindfarms/paranoodles
+        path: paranoodles
     - name: Install tree
       id: tree
       run: yum install -y tree
@@ -21,6 +33,9 @@ jobs:
     - name: Create conda environment
       id: create-environment
       run: source ~/miniconda3/etc/profile.d/conda.sh && conda env create --file=environments.yml
+    - name: Install package
+      id: install-this
+      run: source ~/miniconda3/etc/profile.d/conda.sh && conda activate cylinder && pip install -e .[develop]
     - name: Use OpenFOAM
       id: openfoam
       run: ./run.sh
