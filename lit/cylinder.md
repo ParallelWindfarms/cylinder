@@ -400,13 +400,21 @@ write_interval = write_interval or (1 if solver == "scalarTransportFoam" else dt
 - [x] check if this is enough to have Adios 'restart' from the correct time
 
 ``` {.python #set-control-dict}
-controlDict = parameter_file(y, "system/controlDict")
-controlDict.content['startFrom'] = "latestTime"
-controlDict.content['startTime'] = t_0
-controlDict.content['endTime'] = t_1
-controlDict.content['deltaT'] = dt
-controlDict.content['writeInterval'] = write_interval
-controlDict.writeFile()
+for i in range(5):   # this sometimes fails, so we try a few times, maybe disk sync issue?
+    try:
+        controlDict = parameter_file(y, "system/controlDict")
+        controlDict.content['startFrom'] = "latestTime"
+        controlDict.content['startTime'] = t_0
+        controlDict.content['endTime'] = t_1
+        controlDict.content['deltaT'] = dt
+        controlDict.content['writeInterval'] = write_interval
+        controlDict.writeFile()
+        break
+    except Exception as e:
+        exception = e
+else:
+    raise exception
+
 ```
 
 ### Run solver
@@ -414,7 +422,9 @@ controlDict.writeFile()
 - [ ] Change `Execution.AnalyzedRunner` to self-coded `subprocess.run` type of operation.
 
 ``` {.python #run-solver}
-subprocess.run(solver, cwd=y.path, check=True)
+with open(y.path / "log.stdout", "w") as logfile, \
+     open(y.path / "log.stderr", "w") as errfile:
+    subprocess.run(solver, cwd=y.path, check=True, stdout=logfile, stderr=errfile)
 
 ```
 
@@ -497,31 +507,35 @@ Time for a bit of wishful programming
 from pathlib import Path
 import numpy as np
 from noodles import (gather)
+from functools import partial
 from paranoodles import (schedule, run, parareal, tabulate)
 from pintFoam import (BaseCase, foam, block_mesh, serial)
 
 
-case = BaseCase(Path("c1"), "baseCase")
+case = BaseCase(Path("c1"), "baseCase", fields=["p", "U", "phi", "phi_0", "pMean", "pPrime2Mean", "U_0", "UMean", "UPrime2Mean"])
 block_mesh(case)
 
-
-@schedule
-def fine(x, t_0, t_1):
-    return foam("icoFoam", 0.05, x, t_0, t_1)
-
-
-@schedule
-def coarse(x, t_0, t_1):
-    return foam("icoFoam", 1.0, x, t_0, t_1)
-
-
 times = np.linspace(0.0, 350.0, 11)
+
+@schedule
+def fine(n, x, t_0, t_1):
+    return foam("icoFoam", 0.05, x, t_0, t_1,
+                job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-fine")
+
+
+@schedule
+def coarse(n, x, t_0, t_1):
+    return foam("icoFoam", 1.0, x, t_0, t_1,
+                job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
+
 # init = foam("icoFoam", 0.0001, case.new_vector(), 0.0, 0.0)
 init = case.new_vector("init")
-y_first = gather(*tabulate(coarse, init, times))
-y_parareal = gather(*parareal(coarse, fine)(y_first, times))
+y = gather(*tabulate(partial(coarse, 0), init, times))
 
-run(y_parareal, n_threads=4, registry=serial, db_file="noodles.db")
+for n in range(1, 10):
+    y = gather(*parareal(partial(coarse, n), partial(fine, n))(y, times))
+
+run(y, n_threads=4, registry=serial, db_file="noodles.db")
 ```
 
 # Appendix A: Utils

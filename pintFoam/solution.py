@@ -43,16 +43,26 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
     y = x.clone(job_name)
     write_interval = write_interval or (1 if solver == "scalarTransportFoam" else dt)
     # ~\~ begin <<lit/cylinder.md|set-control-dict>>[0]
-    controlDict = parameter_file(y, "system/controlDict")
-    controlDict.content['startFrom'] = "latestTime"
-    controlDict.content['startTime'] = t_0
-    controlDict.content['endTime'] = t_1
-    controlDict.content['deltaT'] = dt
-    controlDict.content['writeInterval'] = write_interval
-    controlDict.writeFile()
+    for i in range(5):   # this sometimes fails, so we try a few times, maybe disk sync issue?
+        try:
+            controlDict = parameter_file(y, "system/controlDict")
+            controlDict.content['startFrom'] = "latestTime"
+            controlDict.content['startTime'] = t_0
+            controlDict.content['endTime'] = t_1
+            controlDict.content['deltaT'] = dt
+            controlDict.content['writeInterval'] = write_interval
+            controlDict.writeFile()
+            break
+        except Exception as e:
+            exception = e
+    else:
+        raise exception
+
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|run-solver>>[0]
-    subprocess.run(solver, cwd=y.path, check=True)
+    with open(y.path / "log.stdout", "w") as logfile, \
+         open(y.path / "log.stderr", "w") as errfile:
+        subprocess.run(solver, cwd=y.path, check=True, stdout=logfile, stderr=errfile)
 
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|return-result>>[0]
