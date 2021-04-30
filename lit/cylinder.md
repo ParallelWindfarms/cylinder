@@ -241,7 +241,11 @@ def mmap_data(self, field):
     f = (self.dirname / field).open(mode="r+b")
     with mmap.mmap(f.fileno(), 0) as mm:
         content = parse_bytes(foam_file, mm)
-        yield content["data"]["internalField"]
+        try:
+            yield content["data"]["internalField"]
+        except KeyError as e:
+            print(content)
+            raise e
 ```
 
 We clone a vector by creating a new vector and copying the internal fields.

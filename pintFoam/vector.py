@@ -109,7 +109,11 @@ class Vector:
         f = (self.dirname / field).open(mode="r+b")
         with mmap.mmap(f.fileno(), 0) as mm:
             content = parse_bytes(foam_file, mm)
-            yield content["data"]["internalField"]
+            try:
+                yield content["data"]["internalField"]
+            except KeyError as e:
+                print(content)
+                raise e
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
     def clone(self, name: Optional[str] = None) -> Vector:
