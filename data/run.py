@@ -24,8 +24,7 @@ def coarse(n, x, t_0, t_1):
     return foam("icoFoam", 1.0, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
 
-# init = foam("icoFoam", 0.0001, case.new_vector(), 0.0, 0.0)
-init = case.new_vector("init")
+init = foam("icoFoam", 0.0001, case.new_vector(), 0.0, 0.0001)
 y = gather(*tabulate(partial(coarse, 0), init, times))
 
 for n in range(1, 10):
