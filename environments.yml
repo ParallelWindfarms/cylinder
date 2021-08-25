@@ -1,4 +1,0 @@
-name: cylinder
-dependencies:
-  - pip:
-    - sphinx-rtd-theme

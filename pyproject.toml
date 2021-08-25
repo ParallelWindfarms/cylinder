@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "cylinder"
+version = "0.1.0"
+description = "Parallel-in-time demo, computing flow around cylinder using OpenFOAM and the Parareal algorithm."
+authors = ["Johan Hidding <j.hidding@esciencecenter.nl>"]
+license = "Apache-2.0"
+packages = [
+    { include = "pintFoam" },
+    { include = "paranoodles" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+PyFoam = "^2021.6"
+byteparsing = "^0.1.2"
+numpy = "^1.21.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.4"
+mypy = "^0.910"
+pytest-cov = "^2.12.1"
+pytest-flake8 = "^1.0.7"
+pytest-mypy = "^0.8.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
