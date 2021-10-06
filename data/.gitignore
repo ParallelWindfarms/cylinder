@@ -1,5 +1,7 @@
 polyMesh
-**/*
-!**/baseCase
+.
+!c1/baseCase
+!c7_coarse/baseCase
+!c7_fine/baseCase
 !run.py
 
