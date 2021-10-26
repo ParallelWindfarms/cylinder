@@ -127,9 +127,6 @@ class Vector:
     # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[0]
     def zip_with(self, other: Vector, op) -> Vector:
         x = self.clone()
-        # ~\~ begin <<lit/cylinder.md|copy-attrs-and-bounds>>[0]
-        # We're back to mutating a clone, so no copying of attrs needed.
-        # ~\~ end
 
         for f in self.fields:
             with x.mmap_data(f) as a, other.mmap_data(f) as b:

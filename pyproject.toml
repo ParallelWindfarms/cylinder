@@ -5,15 +5,17 @@ description = "Parallel-in-time demo, computing flow around cylinder using OpenF
 authors = ["Johan Hidding <j.hidding@esciencecenter.nl>"]
 license = "Apache-2.0"
 packages = [
-    { include = "pintFoam" },
-    { include = "paranoodles" },
+    { include = "pintFoam/**/*.py" },
 ]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
 PyFoam = "^2021.6"
 byteparsing = "^0.1.2"
 numpy = "^1.21.2"
+paranoodles = {git = "https://github.com/parallelwindfarms/paranoodles.git"}
+argh = "^0.26.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

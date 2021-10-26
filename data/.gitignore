@@ -1,5 +1,4 @@
-polyMesh
-.
+*
 !c1/baseCase
 !c7_coarse/baseCase
 !c7_fine/baseCase

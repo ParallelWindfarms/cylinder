@@ -210,9 +210,6 @@ class Vector:
 
 From a vector we can extract a file path pointing to the specified time slot, list the containing files and read out `internalField` from any of those files.
 
-- [ ] `files` property would work different with Adios.
-- [ ] port `internalField` method to Adios.
-
 ``` {.python #pintfoam-vector-properties}
 @property
 def path(self):
@@ -250,8 +247,6 @@ def mmap_data(self, field):
 
 We clone a vector by creating a new vector and copying the internal fields.
 
-- [ ] using Adios the location of a time-frame is different, copy `adiosData/{time}.bp*` instead
-
 ``` {.python #pintfoam-vector-clone}
 def clone(self, name: Optional[str] = None) -> Vector:
     """Clone this vector to a new one. The clone only contains this single snapshot."""
@@ -272,7 +267,6 @@ In order to achieve this, first we'll write generic recipes for **any** operatio
 ``` {.python #pintfoam-vector-operate}
 def zip_with(self, other: Vector, op) -> Vector:
     x = self.clone()
-    <<copy-attrs-and-bounds>>
 
     for f in self.fields:
         with x.mmap_data(f) as a, other.mmap_data(f) as b:
@@ -287,14 +281,6 @@ def map(self, f) -> Vector:
             a[:] = f(a)
     return x
 ```
-
-<<<<<<< HEAD
-``` {.python #copy-attrs-and-bounds}
-# We're back to mutating a clone, so no copying of attrs needed.
-```
-=======
-_The conditional structures in the chunk above are due to the fact that uniform and non-uniform fields are stored in not mutually-compatible ways, forcing us to operate differently with them._
->>>>>>> master
 
 We now have the tools to define vector addition, subtraction and scaling.
 
@@ -315,7 +301,6 @@ In the code chunk above we used the so-called magic methods. If we use a minus s
 
 We may want to call `setFields` on our `Vector` to setup some test cases.
 
-- [ ] port to Adios
 - [ ] add doc-string
 
 ``` {.python #pintfoam-set-fields}
@@ -325,6 +310,28 @@ def set_fields(v, *, defaultFieldValues, regions):
     x['regions'] = regions
     x.writeFile()
     subprocess.run("setFields", cwd=v.path, check=True)
+```
+
+## Mesh refinement
+
+``` {.python file=pintFoam/foamTools.py}
+from dataclasses import dataclass
+from typing import Callable
+
+from .utils import decorator
+
+Stub = Callable[[], None]
+
+
+@decorator
+@dataclass
+class Tool:
+    _func: Stub
+    command: str
+    arguments: list[str]
+
+
+
 ```
 
 ## Solution
@@ -575,6 +582,25 @@ import os
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Union
+import functools
+
+
+def decorator(f):
+    """Creates a parametric decorator from a function. The resulting decorator
+    will optionally take keyword arguments."""
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if args and len(args) == 1:
+            return f(*args, **kwargs)
+
+        if args:
+            raise TypeError(
+                "This decorator only accepts extra keyword arguments.")
+
+        return lambda g: f(g, **kwargs)
+
+    return decorated_function
+
 
 @contextmanager
 def pushd(path: Union[str, Path]):

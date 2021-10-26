@@ -238,7 +238,7 @@ figure out how to work <code>mapFields</code>, and make this scriptable from Pyt
 <span id="base-case-11"><a href="#base-case-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> path(<span class="va">self</span>):</span>
 <span id="base-case-12"><a href="#base-case-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.root <span class="op">/</span> <span class="va">self</span>.case</span>
 <span id="base-case-13"><a href="#base-case-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="base-case-14"><a href="#base-case-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> new_vector(<span class="va">self</span>, name<span class="op">=</span><span class="va">None</span>):</span>
+<span id="base-case-14"><a href="#base-case-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> new_vector(<span class="va">self</span>, name: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>):</span>
 <span id="base-case-15"><a href="#base-case-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">&quot;&quot;&quot;Creates new `Vector` using this base case.&quot;&quot;&quot;</span></span>
 <span id="base-case-16"><a href="#base-case-16" aria-hidden="true" tabindex="-1"></a>        new_case <span class="op">=</span> name <span class="kw">or</span> uuid4().<span class="bu">hex</span></span>
 <span id="base-case-17"><a href="#base-case-17" aria-hidden="true" tabindex="-1"></a>        new_path <span class="op">=</span> <span class="va">self</span>.root <span class="op">/</span> new_case</span>
@@ -303,12 +303,6 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="pintfoam-vector-10"><a href="#pintfoam-vector-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>operators<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
 <p>From a vector we can extract a file path pointing to the specified time slot, list the containing files and read out <code>internalField</code> from any of those files.</p>
-<ul class="task-list">
-<li><input type="checkbox" disabled="" />
-<code>files</code> property would work different with Adios.</li>
-<li><input type="checkbox" disabled="" />
-port <code>internalField</code> method to Adios.</li>
-</ul>
 <div class="annotated-code">
 <p><span><em>«pintfoam-vector-properties»=</em></span></p>
 <div class="sourceCode" id="pintfoam-vector-properties"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-properties-1"><a href="#pintfoam-vector-properties-1" aria-hidden="true" tabindex="-1"></a><span class="at">@property</span></span>
@@ -338,18 +332,18 @@ port <code>internalField</code> method to Adios.</li>
 <span id="pintfoam-vector-properties-25"><a href="#pintfoam-vector-properties-25" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> (<span class="va">self</span>.dirname <span class="op">/</span> field).<span class="bu">open</span>(mode<span class="op">=</span><span class="st">&quot;r+b&quot;</span>)</span>
 <span id="pintfoam-vector-properties-26"><a href="#pintfoam-vector-properties-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> mmap.mmap(f.fileno(), <span class="dv">0</span>) <span class="im">as</span> mm:</span>
 <span id="pintfoam-vector-properties-27"><a href="#pintfoam-vector-properties-27" aria-hidden="true" tabindex="-1"></a>        content <span class="op">=</span> parse_bytes(foam_file, mm)</span>
-<span id="pintfoam-vector-properties-28"><a href="#pintfoam-vector-properties-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> content[<span class="st">&quot;data&quot;</span>][<span class="st">&quot;internalField&quot;</span>]</span></code></pre></div>
+<span id="pintfoam-vector-properties-28"><a href="#pintfoam-vector-properties-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span>:</span>
+<span id="pintfoam-vector-properties-29"><a href="#pintfoam-vector-properties-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> content[<span class="st">&quot;data&quot;</span>][<span class="st">&quot;internalField&quot;</span>]</span>
+<span id="pintfoam-vector-properties-30"><a href="#pintfoam-vector-properties-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">except</span> <span class="pp">KeyError</span> <span class="im">as</span> e:</span>
+<span id="pintfoam-vector-properties-31"><a href="#pintfoam-vector-properties-31" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(content)</span>
+<span id="pintfoam-vector-properties-32"><a href="#pintfoam-vector-properties-32" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> e</span></code></pre></div>
 </div>
 <p>We clone a vector by creating a new vector and copying the internal fields.</p>
-<ul class="task-list">
-<li><input type="checkbox" disabled="" />
-using Adios the location of a time-frame is different, copy <code>adiosData/{time}.bp*</code> instead</li>
-</ul>
 <div class="annotated-code">
 <p><span><em>«pintfoam-vector-clone»=</em></span></p>
-<div class="sourceCode" id="pintfoam-vector-clone"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-clone-1"><a href="#pintfoam-vector-clone-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clone(<span class="va">self</span>):</span>
+<div class="sourceCode" id="pintfoam-vector-clone"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-clone-1"><a href="#pintfoam-vector-clone-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clone(<span class="va">self</span>, name: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
 <span id="pintfoam-vector-clone-2"><a href="#pintfoam-vector-clone-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Clone this vector to a new one. The clone only contains this single snapshot.&quot;&quot;&quot;</span></span>
-<span id="pintfoam-vector-clone-3"><a href="#pintfoam-vector-clone-3" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.base.new_vector()</span>
+<span id="pintfoam-vector-clone-3"><a href="#pintfoam-vector-clone-3" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.base.new_vector(name)</span>
 <span id="pintfoam-vector-clone-4"><a href="#pintfoam-vector-clone-4" aria-hidden="true" tabindex="-1"></a>    x.time <span class="op">=</span> <span class="va">self</span>.time</span>
 <span id="pintfoam-vector-clone-5"><a href="#pintfoam-vector-clone-5" aria-hidden="true" tabindex="-1"></a>    rmtree(x.dirname, ignore_errors<span class="op">=</span><span class="va">True</span>)</span>
 <span id="pintfoam-vector-clone-6"><a href="#pintfoam-vector-clone-6" aria-hidden="true" tabindex="-1"></a>    copytree(<span class="va">self</span>.dirname, x.dirname)</span>
@@ -365,27 +359,20 @@ using Adios the location of a time-frame is different, copy <code>adiosData/{tim
 <p><span><em>«pintfoam-vector-operate»=</em></span></p>
 <div class="sourceCode" id="pintfoam-vector-operate"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-vector-operate-1"><a href="#pintfoam-vector-operate-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> zip_with(<span class="va">self</span>, other: Vector, op) <span class="op">-&gt;</span> Vector:</span>
 <span id="pintfoam-vector-operate-2"><a href="#pintfoam-vector-operate-2" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
-<span id="pintfoam-vector-operate-3"><a href="#pintfoam-vector-operate-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>copy<span class="op">-</span>attrs<span class="op">-</span><span class="kw">and</span><span class="op">-</span>bounds<span class="op">&gt;&gt;</span></span>
-<span id="pintfoam-vector-operate-4"><a href="#pintfoam-vector-operate-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="pintfoam-vector-operate-5"><a href="#pintfoam-vector-operate-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
-<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> x.mmap_data(f) <span class="im">as</span> a, other.mmap_data(f) <span class="im">as</span> b:</span>
-<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7" aria-hidden="true" tabindex="-1"></a>            a[:] <span class="op">=</span> op(a, b)</span>
-<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x</span>
-<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="bu">map</span>(<span class="va">self</span>, f) <span class="op">-&gt;</span> Vector:</span>
-<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
-<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
-<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> x.mmap_data(f) <span class="im">as</span> a:</span>
-<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15" aria-hidden="true" tabindex="-1"></a>            a[:] <span class="op">=</span> f(a)</span>
-<span id="pintfoam-vector-operate-16"><a href="#pintfoam-vector-operate-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x</span></code></pre></div>
+<span id="pintfoam-vector-operate-3"><a href="#pintfoam-vector-operate-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="pintfoam-vector-operate-4"><a href="#pintfoam-vector-operate-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
+<span id="pintfoam-vector-operate-5"><a href="#pintfoam-vector-operate-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> x.mmap_data(f) <span class="im">as</span> a, other.mmap_data(f) <span class="im">as</span> b:</span>
+<span id="pintfoam-vector-operate-6"><a href="#pintfoam-vector-operate-6" aria-hidden="true" tabindex="-1"></a>            a[:] <span class="op">=</span> op(a, b)</span>
+<span id="pintfoam-vector-operate-7"><a href="#pintfoam-vector-operate-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x</span>
+<span id="pintfoam-vector-operate-8"><a href="#pintfoam-vector-operate-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="pintfoam-vector-operate-9"><a href="#pintfoam-vector-operate-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="bu">map</span>(<span class="va">self</span>, f) <span class="op">-&gt;</span> Vector:</span>
+<span id="pintfoam-vector-operate-10"><a href="#pintfoam-vector-operate-10" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
+<span id="pintfoam-vector-operate-11"><a href="#pintfoam-vector-operate-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="pintfoam-vector-operate-12"><a href="#pintfoam-vector-operate-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
+<span id="pintfoam-vector-operate-13"><a href="#pintfoam-vector-operate-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> x.mmap_data(f) <span class="im">as</span> a:</span>
+<span id="pintfoam-vector-operate-14"><a href="#pintfoam-vector-operate-14" aria-hidden="true" tabindex="-1"></a>            a[:] <span class="op">=</span> f(a)</span>
+<span id="pintfoam-vector-operate-15"><a href="#pintfoam-vector-operate-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x</span></code></pre></div>
 </div>
-<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</p>
-<div class="annotated-code">
-<p><span><em>«copy-attrs-and-bounds»=</em></span></p>
-<div class="sourceCode" id="copy-attrs-and-bounds"><pre class="sourceCode python"><code class="sourceCode python"><span id="copy-attrs-and-bounds-1"><a href="#copy-attrs-and-bounds-1" aria-hidden="true" tabindex="-1"></a><span class="co"># We&#39;re back to mutating a clone, so no copying of attrs needed.</span></span></code></pre></div>
-</div>
-<p>======= <em>The conditional structures in the chunk above are due to the fact that uniform and non-uniform fields are stored in not mutually-compatible ways, forcing us to operate differently with them.</em> &gt;&gt;&gt;&gt;&gt;&gt;&gt; master</p>
 <p>We now have the tools to define vector addition, subtraction and scaling.</p>
 <div class="annotated-code">
 <p><span><em>«pintfoam-vector-operators»=</em></span></p>
@@ -403,8 +390,6 @@ using Adios the location of a time-frame is different, copy <code>adiosData/{tim
 <p>We may want to call <code>setFields</code> on our <code>Vector</code> to setup some test cases.</p>
 <ul class="task-list">
 <li><input type="checkbox" disabled="" />
-port to Adios</li>
-<li><input type="checkbox" disabled="" />
 add doc-string</li>
 </ul>
 <div class="annotated-code">
@@ -416,27 +401,47 @@ add doc-string</li>
 <span id="pintfoam-set-fields-5"><a href="#pintfoam-set-fields-5" aria-hidden="true" tabindex="-1"></a>    x.writeFile()</span>
 <span id="pintfoam-set-fields-6"><a href="#pintfoam-set-fields-6" aria-hidden="true" tabindex="-1"></a>    subprocess.run(<span class="st">&quot;setFields&quot;</span>, cwd<span class="op">=</span>v.path, check<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
 </div>
+<h2 id="mesh-refinement">Mesh refinement</h2>
+<div class="annotated-code">
+<p><span><em>«pintFoam/foamTools.py»=</em></span></p>
+<div class="sourceCode" id="cb10" data-file="pintFoam/foamTools.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Callable</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .utils <span class="im">import</span> decorator</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>Stub <span class="op">=</span> Callable[[], <span class="va">None</span>]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">@decorator</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Tool:</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    _func: Stub</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    command: <span class="bu">str</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    arguments: <span class="bu">list</span>[<span class="bu">str</span>]</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+</div>
 <h2 id="solution">Solution</h2>
 <p>Remember, the definition of a <code>Solution</code>,</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>Solution <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>, <span class="bu">float</span>], Vector]</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>Solution <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>, <span class="bu">float</span>], Vector]</span></code></pre></div>
 <p>meaning, we write a function taking a current state <code>Vector</code>, the time <em>now</em>, and the <em>target</em> time, returning a new <code>Vector</code>.</p>
 <div class="annotated-code">
 <p><span><em>«pintFoam/solution.py»=</em></span></p>
-<div class="sourceCode" id="cb11" data-file="pintFoam/solution.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional, Union</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .vector <span class="im">import</span> (BaseCase, Vector, parameter_file, get_times)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_mesh(case: BaseCase):</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    subprocess.run(<span class="st">&quot;blockMesh&quot;</span>, cwd<span class="op">=</span>case.path, check<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span><span class="bu">set</span><span class="op">-</span>fields<span class="op">&gt;&gt;</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>epsilon<span class="op">&gt;&gt;</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">&gt;&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb12" data-file="pintFoam/solution.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional, Union</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .vector <span class="im">import</span> (BaseCase, Vector, parameter_file, get_times)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_mesh(case: BaseCase):</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    subprocess.run(<span class="st">&quot;blockMesh&quot;</span>, cwd<span class="op">=</span>case.path, check<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span><span class="bu">set</span><span class="op">-</span>fields<span class="op">&gt;&gt;</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>epsilon<span class="op">&gt;&gt;</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
 <p>The solver will write directories with floating-point valued names. This is a very bad idea by the folks at OpenFOAM, but it is one we’ll have to live with. Suppose you have a time-step of <span class="math inline">\(0.1\)</span>, what will be the names of the directories if you integrate from <span class="math inline">\(0\)</span> to <span class="math inline">\(0.5\)</span>?</p>
-<div class="sourceCode" id="cb12" data-session="0"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>[x <span class="op">*</span> <span class="fl">0.1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">6</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb13" data-session="0"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>[x <span class="op">*</span> <span class="fl">0.1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">6</span>)]</span></code></pre></div>
 <p>In Python 3.7, this gives <code>[0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5]</code>. Surely, if you give a time-step of <span class="math inline">\(0.1\)</span> to OpenFOAM, it will create a directory named <code>0.3</code> instead. We’ll define the constant <code>epsilon</code> to aid us in identifying the correct state directory given a floating-point time.</p>
 <div class="annotated-code">
 <p><span><em>«pintfoam-epsilon»=</em></span></p>
@@ -446,28 +451,29 @@ add doc-string</li>
 <div class="annotated-code">
 <p><span><em>«pintfoam-solution»=</em></span></p>
 <div class="sourceCode" id="pintfoam-solution"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-solution-1"><a href="#pintfoam-solution-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> foam(solver: <span class="bu">str</span>, dt: <span class="bu">float</span>, x: Vector, t_0: <span class="bu">float</span>, t_1: <span class="bu">float</span>,</span>
-<span id="pintfoam-solution-2"><a href="#pintfoam-solution-2" aria-hidden="true" tabindex="-1"></a>         write_interval: Optional[Union[<span class="bu">int</span>,<span class="bu">float</span>]] <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
-<span id="pintfoam-solution-3"><a href="#pintfoam-solution-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Call an OpenFOAM code.</span></span>
-<span id="pintfoam-solution-4"><a href="#pintfoam-solution-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="pintfoam-solution-5"><a href="#pintfoam-solution-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
-<span id="pintfoam-solution-6"><a href="#pintfoam-solution-6" aria-hidden="true" tabindex="-1"></a><span class="co">        solver: The name of the solver (e.g. &quot;icoFoam&quot;, &quot;scalarTransportFoam&quot; etc.)</span></span>
-<span id="pintfoam-solution-7"><a href="#pintfoam-solution-7" aria-hidden="true" tabindex="-1"></a><span class="co">        dt:     deltaT parameter</span></span>
-<span id="pintfoam-solution-8"><a href="#pintfoam-solution-8" aria-hidden="true" tabindex="-1"></a><span class="co">        x:      initial state</span></span>
-<span id="pintfoam-solution-9"><a href="#pintfoam-solution-9" aria-hidden="true" tabindex="-1"></a><span class="co">        t_0:    startTime (should match that in initial state)</span></span>
-<span id="pintfoam-solution-10"><a href="#pintfoam-solution-10" aria-hidden="true" tabindex="-1"></a><span class="co">        t_1:    endTime</span></span>
-<span id="pintfoam-solution-11"><a href="#pintfoam-solution-11" aria-hidden="true" tabindex="-1"></a><span class="co">        write_interval: if not given, this is computed so that only the endTime</span></span>
-<span id="pintfoam-solution-12"><a href="#pintfoam-solution-12" aria-hidden="true" tabindex="-1"></a><span class="co">                is written.</span></span>
-<span id="pintfoam-solution-13"><a href="#pintfoam-solution-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="pintfoam-solution-14"><a href="#pintfoam-solution-14" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
-<span id="pintfoam-solution-15"><a href="#pintfoam-solution-15" aria-hidden="true" tabindex="-1"></a><span class="co">        The `Vector` representing the end state.</span></span>
-<span id="pintfoam-solution-16"><a href="#pintfoam-solution-16" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
-<span id="pintfoam-solution-17"><a href="#pintfoam-solution-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">-</span>function<span class="op">&gt;&gt;</span></span></code></pre></div>
+<span id="pintfoam-solution-2"><a href="#pintfoam-solution-2" aria-hidden="true" tabindex="-1"></a>         write_interval: Optional[Union[<span class="bu">int</span>,<span class="bu">float</span>]] <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="pintfoam-solution-3"><a href="#pintfoam-solution-3" aria-hidden="true" tabindex="-1"></a>         job_name: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
+<span id="pintfoam-solution-4"><a href="#pintfoam-solution-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Call an OpenFOAM code.</span></span>
+<span id="pintfoam-solution-5"><a href="#pintfoam-solution-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="pintfoam-solution-6"><a href="#pintfoam-solution-6" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="pintfoam-solution-7"><a href="#pintfoam-solution-7" aria-hidden="true" tabindex="-1"></a><span class="co">        solver: The name of the solver (e.g. &quot;icoFoam&quot;, &quot;scalarTransportFoam&quot; etc.)</span></span>
+<span id="pintfoam-solution-8"><a href="#pintfoam-solution-8" aria-hidden="true" tabindex="-1"></a><span class="co">        dt:     deltaT parameter</span></span>
+<span id="pintfoam-solution-9"><a href="#pintfoam-solution-9" aria-hidden="true" tabindex="-1"></a><span class="co">        x:      initial state</span></span>
+<span id="pintfoam-solution-10"><a href="#pintfoam-solution-10" aria-hidden="true" tabindex="-1"></a><span class="co">        t_0:    startTime (should match that in initial state)</span></span>
+<span id="pintfoam-solution-11"><a href="#pintfoam-solution-11" aria-hidden="true" tabindex="-1"></a><span class="co">        t_1:    endTime</span></span>
+<span id="pintfoam-solution-12"><a href="#pintfoam-solution-12" aria-hidden="true" tabindex="-1"></a><span class="co">        write_interval: if not given, this is computed so that only the endTime</span></span>
+<span id="pintfoam-solution-13"><a href="#pintfoam-solution-13" aria-hidden="true" tabindex="-1"></a><span class="co">                is written.</span></span>
+<span id="pintfoam-solution-14"><a href="#pintfoam-solution-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="pintfoam-solution-15"><a href="#pintfoam-solution-15" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="pintfoam-solution-16"><a href="#pintfoam-solution-16" aria-hidden="true" tabindex="-1"></a><span class="co">        The `Vector` representing the end state.</span></span>
+<span id="pintfoam-solution-17"><a href="#pintfoam-solution-17" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
+<span id="pintfoam-solution-18"><a href="#pintfoam-solution-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">-</span>function<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
 <p>The solver clones a new vector, sets the <code>controlDict</code>, runs the solver and then creates a new vector representing the last time slice.</p>
 <div class="annotated-code">
 <p><span><em>«pintfoam-solution-function»=</em></span></p>
 <div class="sourceCode" id="pintfoam-solution-function"><pre class="sourceCode python"><code class="sourceCode python"><span id="pintfoam-solution-function-1"><a href="#pintfoam-solution-function-1" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">abs</span>(<span class="bu">float</span>(x.time) <span class="op">-</span> t_0) <span class="op">&lt;</span> epsilon, <span class="ss">f&quot;Times should match: </span><span class="sc">{</span>t_0<span class="sc">}</span><span class="ss"> != </span><span class="sc">{x.</span>time<span class="sc">}</span><span class="ss">.&quot;</span></span>
-<span id="pintfoam-solution-function-2"><a href="#pintfoam-solution-function-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> x.clone()</span>
+<span id="pintfoam-solution-function-2"><a href="#pintfoam-solution-function-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> x.clone(job_name)</span>
 <span id="pintfoam-solution-function-3"><a href="#pintfoam-solution-function-3" aria-hidden="true" tabindex="-1"></a>write_interval <span class="op">=</span> write_interval <span class="kw">or</span> (<span class="dv">1</span> <span class="cf">if</span> solver <span class="op">==</span> <span class="st">&quot;scalarTransportFoam&quot;</span> <span class="cf">else</span> dt)</span>
 <span id="pintfoam-solution-function-4"><a href="#pintfoam-solution-function-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span><span class="bu">set</span><span class="op">-</span>control<span class="op">-</span><span class="bu">dict</span><span class="op">&gt;&gt;</span></span>
 <span id="pintfoam-solution-function-5"><a href="#pintfoam-solution-function-5" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>run<span class="op">-</span>solver<span class="op">&gt;&gt;</span></span>
@@ -480,13 +486,20 @@ check if this is enough to have Adios ‘restart’ from the correct time</li>
 </ul>
 <div class="annotated-code">
 <p><span><em>«set-control-dict»=</em></span></p>
-<div class="sourceCode" id="set-control-dict"><pre class="sourceCode python"><code class="sourceCode python"><span id="set-control-dict-1"><a href="#set-control-dict-1" aria-hidden="true" tabindex="-1"></a>controlDict <span class="op">=</span> parameter_file(y, <span class="st">&quot;system/controlDict&quot;</span>)</span>
-<span id="set-control-dict-2"><a href="#set-control-dict-2" aria-hidden="true" tabindex="-1"></a>controlDict.content[<span class="st">&#39;startFrom&#39;</span>] <span class="op">=</span> <span class="st">&quot;latestTime&quot;</span></span>
-<span id="set-control-dict-3"><a href="#set-control-dict-3" aria-hidden="true" tabindex="-1"></a>controlDict.content[<span class="st">&#39;startTime&#39;</span>] <span class="op">=</span> t_0</span>
-<span id="set-control-dict-4"><a href="#set-control-dict-4" aria-hidden="true" tabindex="-1"></a>controlDict.content[<span class="st">&#39;endTime&#39;</span>] <span class="op">=</span> t_1</span>
-<span id="set-control-dict-5"><a href="#set-control-dict-5" aria-hidden="true" tabindex="-1"></a>controlDict.content[<span class="st">&#39;deltaT&#39;</span>] <span class="op">=</span> dt</span>
-<span id="set-control-dict-6"><a href="#set-control-dict-6" aria-hidden="true" tabindex="-1"></a>controlDict.content[<span class="st">&#39;writeInterval&#39;</span>] <span class="op">=</span> write_interval</span>
-<span id="set-control-dict-7"><a href="#set-control-dict-7" aria-hidden="true" tabindex="-1"></a>controlDict.writeFile()</span></code></pre></div>
+<div class="sourceCode" id="set-control-dict"><pre class="sourceCode python"><code class="sourceCode python"><span id="set-control-dict-1"><a href="#set-control-dict-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):   <span class="co"># this sometimes fails, so we try a few times, maybe disk sync issue?</span></span>
+<span id="set-control-dict-2"><a href="#set-control-dict-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="set-control-dict-3"><a href="#set-control-dict-3" aria-hidden="true" tabindex="-1"></a>        controlDict <span class="op">=</span> parameter_file(y, <span class="st">&quot;system/controlDict&quot;</span>)</span>
+<span id="set-control-dict-4"><a href="#set-control-dict-4" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;startFrom&#39;</span>] <span class="op">=</span> <span class="st">&quot;latestTime&quot;</span></span>
+<span id="set-control-dict-5"><a href="#set-control-dict-5" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;startTime&#39;</span>] <span class="op">=</span> t_0</span>
+<span id="set-control-dict-6"><a href="#set-control-dict-6" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;endTime&#39;</span>] <span class="op">=</span> t_1</span>
+<span id="set-control-dict-7"><a href="#set-control-dict-7" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;deltaT&#39;</span>] <span class="op">=</span> dt</span>
+<span id="set-control-dict-8"><a href="#set-control-dict-8" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;writeInterval&#39;</span>] <span class="op">=</span> write_interval</span>
+<span id="set-control-dict-9"><a href="#set-control-dict-9" aria-hidden="true" tabindex="-1"></a>        controlDict.writeFile()</span>
+<span id="set-control-dict-10"><a href="#set-control-dict-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="set-control-dict-11"><a href="#set-control-dict-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="set-control-dict-12"><a href="#set-control-dict-12" aria-hidden="true" tabindex="-1"></a>        exception <span class="op">=</span> e</span>
+<span id="set-control-dict-13"><a href="#set-control-dict-13" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="set-control-dict-14"><a href="#set-control-dict-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> exception</span></code></pre></div>
 </div>
 <h3 id="run-solver">Run solver</h3>
 <ul class="task-list">
@@ -495,7 +508,9 @@ Change <code>Execution.AnalyzedRunner</code> to self-coded <code>subprocess.run<
 </ul>
 <div class="annotated-code">
 <p><span><em>«run-solver»=</em></span></p>
-<div class="sourceCode" id="run-solver"><pre class="sourceCode python"><code class="sourceCode python"><span id="run-solver-1"><a href="#run-solver-1" aria-hidden="true" tabindex="-1"></a>subprocess.run(solver, cwd<span class="op">=</span>y.path, check<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
+<div class="sourceCode" id="run-solver"><pre class="sourceCode python"><code class="sourceCode python"><span id="run-solver-1"><a href="#run-solver-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;log.stdout&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> logfile, <span class="op">\</span></span>
+<span id="run-solver-2"><a href="#run-solver-2" aria-hidden="true" tabindex="-1"></a>     <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;log.stderr&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> errfile:</span>
+<span id="run-solver-3"><a href="#run-solver-3" aria-hidden="true" tabindex="-1"></a>    subprocess.run(solver, cwd<span class="op">=</span>y.path, check<span class="op">=</span><span class="va">True</span>, stdout<span class="op">=</span>logfile, stderr<span class="op">=</span>errfile)</span></code></pre></div>
 </div>
 <h3 id="return-result">Return result</h3>
 <div class="annotated-code">
@@ -506,44 +521,44 @@ Change <code>Execution.AnalyzedRunner</code> to self-coded <code>subprocess.run<
 <h1 id="running-parareal">Running Parareal</h1>
 <div class="annotated-code">
 <p><span><em>«run.py»=</em></span></p>
-<div class="sourceCode" id="cb13" data-file="run.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> noodles</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.draw_workflow <span class="im">import</span> draw_workflow</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.run.threading.vanilla <span class="im">import</span> run_parallel</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.run.process <span class="im">import</span> run_process</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.run.single.vanilla <span class="im">import</span> run_single</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.display.simple_nc <span class="im">import</span> Display</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles <span class="im">import</span> serial</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> paranoodles <span class="im">import</span> tabulate, parareal</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.vector <span class="im">import</span> BaseCase</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.run <span class="im">import</span> (coarse, fine, registry)</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> paint(node, name):</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> name <span class="op">==</span> <span class="st">&quot;coarse&quot;</span>:</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#cccccc&quot;</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> name <span class="op">==</span> <span class="st">&quot;fine&quot;</span>:</span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#88ff88&quot;</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#ffffff&quot;</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, <span class="dv">6</span>)</span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    base_case <span class="op">=</span> BaseCase(Path(<span class="st">&quot;data/c1&quot;</span>).resolve(), <span class="st">&quot;baseCase&quot;</span>)</span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> noodles.gather(<span class="op">*</span>tabulate(coarse, base_case.new_vector(), t))</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    s <span class="op">=</span> noodles.gather(<span class="op">*</span>parareal(fine, coarse)(y, t))</span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># draw_workflow(&quot;wf.svg&quot;, noodles.get_workflow(s), paint)</span></span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> run_process(s, n_processes<span class="op">=</span><span class="dv">4</span>, registry<span class="op">=</span>registry, verbose<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># result = run_single(s)</span></span>
-<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(result)</span>
-<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a><span class="co"># base_case.clean()</span></span></code></pre></div>
+<div class="sourceCode" id="cb14" data-file="run.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> noodles</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.draw_workflow <span class="im">import</span> draw_workflow</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.run.threading.vanilla <span class="im">import</span> run_parallel</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.run.process <span class="im">import</span> run_process</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.run.single.vanilla <span class="im">import</span> run_single</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles.display.simple_nc <span class="im">import</span> Display</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles <span class="im">import</span> serial</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> paranoodles <span class="im">import</span> tabulate, parareal</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.vector <span class="im">import</span> BaseCase</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.run <span class="im">import</span> (coarse, fine, registry)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> paint(node, name):</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> name <span class="op">==</span> <span class="st">&quot;coarse&quot;</span>:</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#cccccc&quot;</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> name <span class="op">==</span> <span class="st">&quot;fine&quot;</span>:</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#88ff88&quot;</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#ffffff&quot;</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, <span class="dv">6</span>)</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>    base_case <span class="op">=</span> BaseCase(Path(<span class="st">&quot;data/c1&quot;</span>).resolve(), <span class="st">&quot;baseCase&quot;</span>)</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> noodles.gather(<span class="op">*</span>tabulate(coarse, base_case.new_vector(), t))</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>    s <span class="op">=</span> noodles.gather(<span class="op">*</span>parareal(fine, coarse)(y, t))</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># draw_workflow(&quot;wf.svg&quot;, noodles.get_workflow(s), paint)</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> run_process(s, n_processes<span class="op">=</span><span class="dv">4</span>, registry<span class="op">=</span>registry, verbose<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># result = run_single(s)</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(result)</span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a><span class="co"># base_case.clean()</span></span></code></pre></div>
 </div>
 <ul class="task-list">
 <li><input type="checkbox" disabled="" />
@@ -551,72 +566,81 @@ update Noodles registry to work with Adios files.</li>
 </ul>
 <div class="annotated-code">
 <p><span><em>«pintFoam/run.py»=</em></span></p>
-<div class="sourceCode" id="cb14" data-file="pintFoam/run.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> noodles   <span class="co"># type: ignore</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles <span class="im">import</span> serial</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .solution <span class="im">import</span> foam</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">@noodles.schedule</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(x, t_0, t_1):</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.05</span>, x, t_0, t_1)</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">@noodles.schedule</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> coarse(x, t_0, t_1):</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.2</span>, x, t_0, t_1)</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> registry():</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> serial.base() <span class="op">+</span> serial.numpy()</span></code></pre></div>
+<div class="sourceCode" id="cb15" data-file="pintFoam/run.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> noodles   <span class="co"># type: ignore</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles <span class="im">import</span> serial</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .solution <span class="im">import</span> foam</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">@noodles.schedule</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(x, t_0, t_1):</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.05</span>, x, t_0, t_1)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">@noodles.schedule</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> coarse(x, t_0, t_1):</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.2</span>, x, t_0, t_1)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> registry():</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> serial.base() <span class="op">+</span> serial.numpy()</span></code></pre></div>
 </div>
 <h1 id="the-user-script">The User script</h1>
 <p>As the final bit, the user should write a (minimal) script for running the simulation. Here we write an example script in the <code>data</code> folder. There should be no reusable parts in this script, or they should go into either the <code>paranoodles</code> or <code>pintFoam</code> module.</p>
 <p>Time for a bit of wishful programming</p>
 <div class="annotated-code">
 <p><span><em>«data/run.py»=</em></span></p>
-<div class="sourceCode" id="cb15" data-file="data/run.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> paranoodles <span class="im">import</span> (schedule, run, parareal, tabulate)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam <span class="im">import</span> (BaseCase, foam, block_mesh, serial)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>case <span class="op">=</span> BaseCase(Path(<span class="st">&quot;c1&quot;</span>), <span class="st">&quot;baseCase&quot;</span>)</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>block_mesh(case)</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">@schedule</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(x, t_0, t_1):</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.05</span>, x, t_0, t_1)</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="at">@schedule</span></span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> coarse(x, t_0, t_1):</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.2</span>, x, t_0, t_1)</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>times <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">10.0</span>, <span class="dv">100</span>)</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>init <span class="op">=</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.05</span>, case.new_vector(), <span class="fl">0.0</span>, <span class="fl">0.0</span>)</span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>tabulate(parareal(coarse, fine), init, times)</span></code></pre></div>
+<div class="sourceCode" id="cb16" data-file="data/run.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> noodles <span class="im">import</span> (gather)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> functools <span class="im">import</span> partial</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> paranoodles <span class="im">import</span> (schedule, run, parareal, tabulate)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam <span class="im">import</span> (BaseCase, foam, block_mesh, serial)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>case <span class="op">=</span> BaseCase(Path(<span class="st">&quot;c1&quot;</span>), <span class="st">&quot;baseCase&quot;</span>, fields<span class="op">=</span>[<span class="st">&quot;p&quot;</span>, <span class="st">&quot;U&quot;</span>, <span class="st">&quot;phi&quot;</span>, <span class="st">&quot;phi_0&quot;</span>, <span class="st">&quot;pMean&quot;</span>, <span class="st">&quot;pPrime2Mean&quot;</span>, <span class="st">&quot;U_0&quot;</span>, <span class="st">&quot;UMean&quot;</span>, <span class="st">&quot;UPrime2Mean&quot;</span>])</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>block_mesh(case)</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>times <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">350.0</span>, <span class="dv">11</span>)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">@schedule</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(n, x, t_0, t_1):</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">0.05</span>, x, t_0, t_1,</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>                job_name<span class="op">=</span><span class="ss">f&quot;</span><span class="sc">{n}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t_0)<span class="sc">:03}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t_1)<span class="sc">:03}</span><span class="ss">-fine&quot;</span>)</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="at">@schedule</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> coarse(n, x, t_0, t_1):</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> foam(<span class="st">&quot;icoFoam&quot;</span>, <span class="fl">1.0</span>, x, t_0, t_1,</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>                job_name<span class="op">=</span><span class="ss">f&quot;</span><span class="sc">{n}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t_0)<span class="sc">:03}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t_1)<span class="sc">:03}</span><span class="ss">-coarse&quot;</span>)</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="co"># init = foam(&quot;icoFoam&quot;, 0.0001, case.new_vector(), 0.0, 0.0)</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>init <span class="op">=</span> case.new_vector(<span class="st">&quot;init&quot;</span>)</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> gather(<span class="op">*</span>tabulate(partial(coarse, <span class="dv">0</span>), init, times))</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> n <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">10</span>):</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> gather(<span class="op">*</span>parareal(partial(coarse, n), partial(fine, n))(y, times))</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>run(y, n_threads<span class="op">=</span><span class="dv">4</span>, registry<span class="op">=</span>serial, db_file<span class="op">=</span><span class="st">&quot;noodles.db&quot;</span>)</span></code></pre></div>
 </div>
 <h1 id="appendix-a-utils">Appendix A: Utils</h1>
 <div class="annotated-code">
 <p><span><em>«pintFoam/utils.py»=</em></span></p>
-<div class="sourceCode" id="cb16" data-file="pintFoam/utils.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>push<span class="op">-</span><span class="bu">dir</span><span class="op">&gt;&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb17" data-file="pintFoam/utils.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>push<span class="op">-</span><span class="bu">dir</span><span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
 <h2 id="cleaning-up">Cleaning up</h2>
 <div class="annotated-code">
 <p><span><em>«pintFoam/clean.py»=</em></span></p>
-<div class="sourceCode" id="cb17" data-file="pintFoam/clean.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> argh  <span class="co"># type:ignore</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .vector <span class="im">import</span> BaseCase</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">@argh.arg</span>(<span class="st">&quot;target&quot;</span>, <span class="bu">help</span><span class="op">=</span><span class="st">&quot;target path to clean&quot;</span>)</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">@argh.arg</span>(<span class="st">&quot;--base_case&quot;</span>, <span class="bu">help</span><span class="op">=</span><span class="st">&quot;name of the base-case&quot;</span>)</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main(target: Path, base_case: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;baseCase&quot;</span>):</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    BaseCase(Path(target), base_case).clean()</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    argh.dispatch_command(main)</span></code></pre></div>
+<div class="sourceCode" id="cb18" data-file="pintFoam/clean.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> argh  <span class="co"># type:ignore</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .vector <span class="im">import</span> BaseCase</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">@argh.arg</span>(<span class="st">&quot;target&quot;</span>, <span class="bu">help</span><span class="op">=</span><span class="st">&quot;target path to clean&quot;</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">@argh.arg</span>(<span class="st">&quot;--base_case&quot;</span>, <span class="bu">help</span><span class="op">=</span><span class="st">&quot;name of the base-case&quot;</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main(target: Path, base_case: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;baseCase&quot;</span>):</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    BaseCase(Path(target), base_case).clean()</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    argh.dispatch_command(main)</span></code></pre></div>
 </div>
 <h2 id="pushd"><code>pushd</code></h2>
 <p>I haven’t been able (with simple attempts) to run a case outside the definition directory. Similar to the <code>pushd</code> bash command, I define a little utility in Python:</p>
@@ -626,18 +650,37 @@ update Noodles registry to work with Adios files.</li>
 <span id="push-dir-2"><a href="#push-dir-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="push-dir-3"><a href="#push-dir-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> contextlib <span class="im">import</span> contextmanager</span>
 <span id="push-dir-4"><a href="#push-dir-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Union</span>
-<span id="push-dir-5"><a href="#push-dir-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="push-dir-6"><a href="#push-dir-6" aria-hidden="true" tabindex="-1"></a><span class="at">@contextmanager</span></span>
-<span id="push-dir-7"><a href="#push-dir-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pushd(path: Union[<span class="bu">str</span>, Path]):</span>
-<span id="push-dir-8"><a href="#push-dir-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Context manager to change directory to given path,</span></span>
-<span id="push-dir-9"><a href="#push-dir-9" aria-hidden="true" tabindex="-1"></a><span class="co">    and get back to current dir at exit.&quot;&quot;&quot;</span></span>
-<span id="push-dir-10"><a href="#push-dir-10" aria-hidden="true" tabindex="-1"></a>    prev <span class="op">=</span> Path.cwd()</span>
-<span id="push-dir-11"><a href="#push-dir-11" aria-hidden="true" tabindex="-1"></a>    os.chdir(path)</span>
-<span id="push-dir-12"><a href="#push-dir-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="push-dir-13"><a href="#push-dir-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
-<span id="push-dir-14"><a href="#push-dir-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span></span>
-<span id="push-dir-15"><a href="#push-dir-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
-<span id="push-dir-16"><a href="#push-dir-16" aria-hidden="true" tabindex="-1"></a>        os.chdir(prev)</span></code></pre></div>
+<span id="push-dir-5"><a href="#push-dir-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> functools</span>
+<span id="push-dir-6"><a href="#push-dir-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-7"><a href="#push-dir-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-8"><a href="#push-dir-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> decorator(f):</span>
+<span id="push-dir-9"><a href="#push-dir-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Creates a parametric decorator from a function. The resulting decorator</span></span>
+<span id="push-dir-10"><a href="#push-dir-10" aria-hidden="true" tabindex="-1"></a><span class="co">    will optionally take keyword arguments.&quot;&quot;&quot;</span></span>
+<span id="push-dir-11"><a href="#push-dir-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">@functools.wraps</span>(f)</span>
+<span id="push-dir-12"><a href="#push-dir-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> decorated_function(<span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="push-dir-13"><a href="#push-dir-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> args <span class="kw">and</span> <span class="bu">len</span>(args) <span class="op">==</span> <span class="dv">1</span>:</span>
+<span id="push-dir-14"><a href="#push-dir-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> f(<span class="op">*</span>args, <span class="op">**</span>kwargs)</span>
+<span id="push-dir-15"><a href="#push-dir-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-16"><a href="#push-dir-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> args:</span>
+<span id="push-dir-17"><a href="#push-dir-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">TypeError</span>(</span>
+<span id="push-dir-18"><a href="#push-dir-18" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;This decorator only accepts extra keyword arguments.&quot;</span>)</span>
+<span id="push-dir-19"><a href="#push-dir-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-20"><a href="#push-dir-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="kw">lambda</span> g: f(g, <span class="op">**</span>kwargs)</span>
+<span id="push-dir-21"><a href="#push-dir-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-22"><a href="#push-dir-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> decorated_function</span>
+<span id="push-dir-23"><a href="#push-dir-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-24"><a href="#push-dir-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-25"><a href="#push-dir-25" aria-hidden="true" tabindex="-1"></a><span class="at">@contextmanager</span></span>
+<span id="push-dir-26"><a href="#push-dir-26" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pushd(path: Union[<span class="bu">str</span>, Path]):</span>
+<span id="push-dir-27"><a href="#push-dir-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Context manager to change directory to given path,</span></span>
+<span id="push-dir-28"><a href="#push-dir-28" aria-hidden="true" tabindex="-1"></a><span class="co">    and get back to current dir at exit.&quot;&quot;&quot;</span></span>
+<span id="push-dir-29"><a href="#push-dir-29" aria-hidden="true" tabindex="-1"></a>    prev <span class="op">=</span> Path.cwd()</span>
+<span id="push-dir-30"><a href="#push-dir-30" aria-hidden="true" tabindex="-1"></a>    os.chdir(path)</span>
+<span id="push-dir-31"><a href="#push-dir-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="push-dir-32"><a href="#push-dir-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="push-dir-33"><a href="#push-dir-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span></span>
+<span id="push-dir-34"><a href="#push-dir-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
+<span id="push-dir-35"><a href="#push-dir-35" aria-hidden="true" tabindex="-1"></a>        os.chdir(prev)</span></code></pre></div>
 </div>
 <h1 id="input-and-output">Input and Output</h1>
 <p>There are utilities that read OpenFOAM files, but they are all broken.</p>

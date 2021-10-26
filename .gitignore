@@ -8,4 +8,5 @@ pintFoam.egg-info
 .mypy_cache
 .coverage
 notebooks
+dist
 
