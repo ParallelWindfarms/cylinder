@@ -9,10 +9,26 @@ from .vector import (BaseCase, Vector, parameter_file, get_times)
 def block_mesh(case: BaseCase):
     subprocess.run("blockMesh", cwd=case.path, check=True)
 
+def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=None) -> Vector:
+    """
+    Valid arguments for `map_method`: mapNearest, interpolate, cellPointInterpolate
+    """
+    result = target.new_vector()
+    result.time = source.time
+    arg_lst = ["mapFields"]
+    if consistent:
+        arg_lst.append("-consistent")
+    if map_method is not None:
+        arg_lst.extend(["-mapMethod", map_method])
+    arg_lst.extend(["-sourceTime", source.time, source.path.resolve()])
+    subprocess.run(arg_lst, cwd=result.path, check=True)
+    (result.path / "0").rename(result.dirname)
+    return result
+
 # ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
-def set_fields(v, *, defaultFieldValues, regions):
+def set_fields(v, *, default_field_values, regions):
     x = parameter_file(v, "system/setFieldsDict")
-    x['defaultFieldValues'] = defaultFieldValues
+    x['defaultFieldValues'] = default_field_values
     x['regions'] = regions
     x.writeFile()
     subprocess.run("setFields", cwd=v.path, check=True)

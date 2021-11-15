@@ -3,18 +3,5 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from .utils import decorator
-
-Stub = Callable[[], None]
-
-
-@decorator
-@dataclass
-class Tool:
-    _func: Stub
-    command: str
-    arguments: list[str]
-
-
 
 # ~\~ end
