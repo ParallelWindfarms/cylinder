@@ -16,7 +16,12 @@ jobs:
         ~/miniconda3/bin/conda init
     - name: Create env
       id: create-env
-      run: pip install poetry && poetry install
+      run: |
+        eval "$(~/miniconda3/bin/conda shell.bash hook 2> /dev/null)"
+        pip install poetry
+        poetry install
     - name: Run tests
       id: run-tests
-      run: poetry run pytest
+      run: |
+        eval "$(~/miniconda3/bin/conda shell.bash hook 2> /dev/null)"
+        poetry run pytest
