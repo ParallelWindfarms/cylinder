@@ -9,24 +9,6 @@ jobs:
     - name: Checkout this
       id: checkout-this
       uses: actions/checkout@v2
-    - name: Checkout byteparsing
-      id: checkout-byteparsing
-      uses: actions/checkout@v2
-      with:
-        repository: parallelwindfarms/byteparsing
-        path: byteparsing
-    - name: Checkout paranoodles
-      id: checkout-paranoodles
-      uses: actions/checkout@v2
-      with:
-        repository: parallelwindfarms/paranoodles
-        path: paranoodles
-    - name: Install tree
-      id: tree
-      run: yum install -y tree
-    - name: Take a look
-      id: look
-      run: tree -L 2
     - name: Install Miniconda
       id: install-miniconda
       run: wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh && sh Miniconda3-py39_4.9.2-Linux-x86_64.sh -b
