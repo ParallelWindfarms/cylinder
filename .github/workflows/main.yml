@@ -14,7 +14,11 @@ jobs:
       run: wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh && sh Miniconda3-py39_4.9.2-Linux-x86_64.sh -b
     - name: Create env
       id: create-env
-      run: pip install poetry && poetry install
+      run: |
+        source ~/miniconda3/etc/profile.d/conda.sh
+        pip install poetry && poetry install
     - name: Run tests
       id: run-tests
-      run: poetry run pytest
+      run: |
+        source ~/miniconda3/etc/profile.d/conda.sh
+        poetry run pytest
