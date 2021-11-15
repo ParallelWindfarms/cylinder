@@ -13,7 +13,7 @@ jobs:
       run: |
         sudo add-apt-repository ppa:deadsnakes/ppa
         sudo curl -s https://dl.openfoam.com/add-debian-repo.sh | sudo bash
-        sudo apt-get install -y python3.9 python3.9-pip openfoam2106-default
+        sudo apt-get install -y python3.9 python3-pip openfoam2106-default
         pip install --user poetry
     - name: Create env
       id: create-env
