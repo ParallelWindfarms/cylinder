@@ -8,6 +8,9 @@ jobs:
     - name: Checkout this
       id: checkout-this
       uses: actions/checkout@v2
+    - name: Add GitHub to known hosts
+      id: github-knownhosts
+      run: ssh-keyscan github.com >> ~/.ssh/known_hosts
     - name: Install packages
       id: install-packages
       run: |
