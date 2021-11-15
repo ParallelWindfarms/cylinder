@@ -16,9 +16,9 @@ jobs:
       id: create-env
       run: |
         source ~/miniconda3/etc/profile.d/conda.sh
-        pip install poetry && poetry install
+        $CONDA/bin/pip install poetry && poetry install
     - name: Run tests
       id: run-tests
       run: |
         source ~/miniconda3/etc/profile.d/conda.sh
-        poetry run pytest
+        $CONDA/bin/poetry run pytest
