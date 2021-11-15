@@ -9,6 +9,9 @@ jobs:
     - name: Checkout this
       id: checkout-this
       uses: actions/checkout@v2
+    - name: Install packages
+      id: install-packages
+      run: yum install git
     - name: Install Miniconda
       id: install-miniconda
       run: |
