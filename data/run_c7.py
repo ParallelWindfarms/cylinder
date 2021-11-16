@@ -49,7 +49,7 @@ def fine(n, x, t_0, t_1):
 
 @delayed
 def coarse(n, x, t_0, t_1):
-    """Coarse integrator"""
+    """Coarse integrator."""
     return foam("pimpleFoam", 1.0, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
 

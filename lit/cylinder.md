@@ -540,12 +540,14 @@ times = np.linspace(0.0, 350.0, 11)
 
 @schedule
 def fine(n, x, t_0, t_1):
+    """Fine integrator."""
     return foam("icoFoam", 0.05, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-fine")
 
 
 @schedule
 def coarse(n, x, t_0, t_1):
+    """Coarse integrator."""
     return foam("icoFoam", 1.0, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
 
