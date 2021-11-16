@@ -24,7 +24,7 @@ jobs:
       id: create-env
       run: |
         pip install --user poetry
-        poetry install
+        poetry install -v
     - name: Run tests
       id: run-tests
       run: |
