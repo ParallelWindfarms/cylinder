@@ -26,28 +26,43 @@ def gather(*args):
 
 @delayed
 def c2f(x):
+    """Coarse to fine.
+    
+    Interpolate the underlying field x from the coarse to the fine grid"""
     return map_fields(x, fine_case, map_method="interpolate")
 
 
 @delayed
 def f2c(x):
+    """Fine to coarse.
+    
+    Interpolate the underlying field x from the fine to the coarse grid"""
     return map_fields(x, coarse_case, map_method="interpolate")
 
 
 @delayed
 def fine(n, x, t_0, t_1):
+    """Fine integrator."""
     return foam("pimpleFoam", 0.1, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-fine")
 
 
 @delayed
 def coarse(n, x, t_0, t_1):
+    """Coarse integrator"""
     return foam("pimpleFoam", 1.0, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
 
 
 def time_windows(times, window_size):
-    """Generate time windows with `window_size` number of steps."""
+    """Split the times vector in a set of time windows of a given size.
+    
+    Args:
+        times:          The times vector
+        window_size:    The number of steps per window (note that n steps 
+        correspond to n + 1 elements in the window). The last window may 
+        be smaller.
+    """
     n_intervals = len(times) - 1
     n = int(ceil(n_intervals / window_size))
     m = window_size
