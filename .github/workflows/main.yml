@@ -28,4 +28,5 @@ jobs:
     - name: Run tests
       id: run-tests
       run: |
+        source /usr/lib/openfoam/openfoam2106/etc/bashrc
         poetry run pytest
