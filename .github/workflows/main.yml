@@ -28,12 +28,6 @@ jobs:
       run: |
         pip install --user poetry
 
-    - name: Clone paranoodles
-      id: clone-paranoodles
-      uses: actions/checkout@master
-      with:
-        name: parallelwindfarms/paranoodles
-
     - name: Create env
       id: create-env
       run: |
