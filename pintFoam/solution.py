@@ -7,10 +7,13 @@ from typing import Optional, Union
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
 def block_mesh(case: BaseCase):
+    """Wrapper for OpenFOAM's blockMesh."""
     subprocess.run("blockMesh", cwd=case.path, check=True)
 
 def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=None) -> Vector:
-    """
+    """Wrapper for OpenFOAM's mapFields
+
+    Use consistent=False if the initial and final boundaries differ.
     Valid arguments for `map_method`: mapNearest, interpolate, cellPointInterpolate
     """
     result = target.new_vector()
@@ -27,6 +30,7 @@ def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=Non
 
 # ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
 def set_fields(v, *, default_field_values, regions):
+    """Wrapper for OpenFOAM's setFields."""
     x = parameter_file(v, "system/setFieldsDict")
     x['defaultFieldValues'] = default_field_values
     x['regions'] = regions

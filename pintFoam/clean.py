@@ -8,6 +8,7 @@ from .vector import BaseCase
 @argh.arg("target", help="target path to clean")
 @argh.arg("--base_case", help="name of the base-case")
 def main(target: Path, base_case: str = "baseCase"):
+    """Auxiliary function that deletes all vectors of this base-case."""
     BaseCase(Path(target), base_case).clean()
 
 

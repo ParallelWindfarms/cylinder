@@ -20,3 +20,9 @@ To install the requirements, also clone [ParaNoodles](https://github.com/Paralle
 ```shell
 pip install -r requirements.txt
 ```
+
+If you use Python [poetry](https://python-poetry.org/), use this instead:
+
+```shell
+poetry install
+```

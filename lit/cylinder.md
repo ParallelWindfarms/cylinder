@@ -305,6 +305,7 @@ We may want to call `setFields` on our `Vector` to setup some test cases.
 
 ``` {.python #pintfoam-set-fields}
 def set_fields(v, *, default_field_values, regions):
+    """Wrapper for OpenFOAM's setFields."""
     x = parameter_file(v, "system/setFieldsDict")
     x['defaultFieldValues'] = default_field_values
     x['regions'] = regions
@@ -340,10 +341,13 @@ from typing import Optional, Union
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
 def block_mesh(case: BaseCase):
+    """Wrapper for OpenFOAM's blockMesh."""
     subprocess.run("blockMesh", cwd=case.path, check=True)
 
 def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=None) -> Vector:
-    """
+    """Wrapper for OpenFOAM's mapFields
+
+    Use consistent=False if the initial and final boundaries differ.
     Valid arguments for `map_method`: mapNearest, interpolate, cellPointInterpolate
     """
     result = target.new_vector()
@@ -505,10 +509,12 @@ from dask import delayed
 
 @delayed
 def fine(x, t_0, t_1):
+    """Example fine integrator."""
     return foam("icoFoam", 0.05, x, t_0, t_1)
 
 @delayed
 def coarse(x, t_0, t_1):
+    """Example coarse integrator."""
     return foam("icoFoam", 0.2, x, t_0, t_1)
 
 ```
@@ -534,12 +540,14 @@ times = np.linspace(0.0, 350.0, 11)
 
 @schedule
 def fine(n, x, t_0, t_1):
+    """Fine integrator."""
     return foam("icoFoam", 0.05, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-fine")
 
 
 @schedule
 def coarse(n, x, t_0, t_1):
+    """Coarse integrator."""
     return foam("icoFoam", 1.0, x, t_0, t_1,
                 job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
 
@@ -570,6 +578,7 @@ from .vector import BaseCase
 @argh.arg("target", help="target path to clean")
 @argh.arg("--base_case", help="name of the base-case")
 def main(target: Path, base_case: str = "baseCase"):
+    """Auxiliary function that deletes all vectors of this base-case."""
     BaseCase(Path(target), base_case).clean()
 
 
