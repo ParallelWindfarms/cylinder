@@ -3,4 +3,5 @@
 !c7_coarse/baseCase
 !c7_fine/baseCase
 !run.py
+!run_c7.py
 
