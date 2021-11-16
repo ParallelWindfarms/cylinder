@@ -409,6 +409,7 @@ The solver clones a new vector, sets the `controlDict`, runs the solver and then
 assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone(job_name)
 write_interval = write_interval or (t_1 - t_0)
+backup = open(y.path / "system" / "controlDict", "r").read()
 <<set-control-dict>>
 <<run-solver>>
 <<return-result>>
@@ -421,16 +422,19 @@ write_interval = write_interval or (t_1 - t_0)
 ``` {.python #set-control-dict}
 for i in range(5):   # this sometimes fails, so we try a few times, maybe disk sync issue?
     try:
+        print(f"Attempt {i+1} at writing controlDict")
         controlDict = parameter_file(y, "system/controlDict")
         controlDict.content['startFrom'] = "latestTime"
-        controlDict.content['startTime'] = t_0
-        controlDict.content['endTime'] = t_1
-        controlDict.content['deltaT'] = dt
-        controlDict.content['writeInterval'] = write_interval
+        controlDict.content['startTime'] = float(t_0)
+        controlDict.content['endTime'] = float(t_1)
+        controlDict.content['deltaT'] = float(dt)
+        controlDict.content['writeInterval'] = float(write_interval)
+        controlDict.content['writeControl'] = write_control
         controlDict.writeFile()
         break
     except Exception as e:
         exception = e
+        open(y.path / "system" / "controlDict", "w").write(backup)
 else:
     raise exception
 
@@ -500,23 +504,19 @@ if __name__ == "__main__":
 - [ ] update Noodles registry to work with Adios files.
 
 ``` {.python file=pintFoam/run.py}
-import noodles   # type: ignore
-from noodles import serial
-
 from .solution import foam
+from dask import delayed
 
-@noodles.schedule
+@delayed
 def fine(x, t_0, t_1):
     """Example fine integrator."""
     return foam("icoFoam", 0.05, x, t_0, t_1)
 
-@noodles.schedule
+@delayed
 def coarse(x, t_0, t_1):
     """Example coarse integrator."""
     return foam("icoFoam", 0.2, x, t_0, t_1)
 
-def registry():
-    return serial.base() + serial.numpy()
 ```
 
 # The User script
