@@ -29,6 +29,7 @@ jobs:
     - name: Enable OpenFOAM
       id: enable-openfoam
       run: |
+        cat /usr/lib/openfoam/openfoam2106/etc/bashrc
         source /usr/lib/openfoam/openfoam2106/etc/bashrc
 
     - name: Run tests
