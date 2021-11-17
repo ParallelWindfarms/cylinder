@@ -16,13 +16,6 @@ jobs:
         sudo curl -s https://dl.openfoam.com/add-debian-repo.sh | sudo bash
         sudo apt-get install -y python3.9 python3-pip openfoam2106-default python3-testresources
 
-    - name: Add GitHub to known hosts
-      id: github-knownhosts
-      run: |
-        mkdir -p ~/.ssh
-        touch ~/.ssh/known-hosts
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-
     - name: Install poetry
       id: install-poetry
       run: |
