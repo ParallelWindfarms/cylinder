@@ -254,7 +254,7 @@ plt.savefig("harmonic.svg")
 
 ![Damped harmonic oscillator](./img/harmonic.svg)
 
-# Parareal
+## Parareal
 
 From Wikipedia:
 
@@ -325,30 +325,33 @@ def parareal(
 ```
 
 ## Running in parallel
-The way we implemented the `parareal` function is not very efficient. It's Python, there's a recursion in the dependency, so no way to sweeten it up with `numpy`. Suppose however, that the `fine` solution may take a while to compute, and we only use Python to steer the computation. How can we paralellise the implementation of `parareal`? The answer is: we don't need to! Noodles can do it for us.
 
-``` {.python #import-noodles}
-import noodles
+``` {.python #import-dask}
+from dask import delayed
 ```
 
-``` {.python #noodlify}
-<<import-noodles>>
+``` {.python #daskify}
+<<import-dask>>
 import numpy as np
-from noodles.draw_workflow import draw_workflow
 
-from parareal.harmonic_oscillator import \
+from pintFoam.parareal.harmonic_oscillator import \
     ( harmonic_oscillator, underdamped_solution )
-from parareal.forward_euler import \
+from pintFoam.parareal.forward_euler import \
     ( forward_euler )
-from parareal.tabulate_solution import \
+from pintFoam.parareal.tabulate_solution import \
     ( tabulate )
-from parareal.parareal import \
+from pintFoam.parareal.parareal import \
     ( parareal )
+
+
+@delayed
+def gather(*args):
+    return list(args)
 ```
 
-To see what Noodles does, first we'll noodlify the direct integration routine in `tabulate`. We take the same harmonic oscillator we had before. For the sake of argument let's divide the time line in three steps (so four points).
+To see what Noodles does, first we'll daskify the direct integration routine in `tabulate`. We take the same harmonic oscillator we had before. For the sake of argument let's divide the time line in three steps (so four points).
 
-``` {.python #noodlify}
+``` {.python #daskify}
 omega_0 = 1.0
 zeta = 0.5
 f = harmonic_oscillator(omega_0, zeta)
@@ -357,24 +360,24 @@ t = np.linspace(0.0, 15.0, 4)
 
 We now define the `fine` integrator:
 
-```{.python #noodlify}
+```{.python #daskify}
 h = 0.01
 
-@noodles.schedule
+@delayed
 def fine(x, t_0, t_1):
     return iterate_solution(forward_euler(f), h)(x, t_0, t_1)
 ```
 
-It doesn't really matter what the fine integrator does, since we won't run anything. We'll just pretend. The `noodles.schedule` decorator makes sure that the integrator is never called, we just store the information that we *want* to call the `fine` function. The resulting value is a *promise* that at some point we *will* call the `fine` function. The nice thing is, that this promise behaves like any other Python object, it even qualifies as a `Vector`! The `tabulate` routine returns a `Sequence` of `Vector`s, in this case a list of promises. The `noodles.gather` function takes a list of promises and turns it into a promise of a list (in fact, its definition boils down to `noodles.schedule(list)`).
+It doesn't really matter what the fine integrator does, since we won't run anything. We'll just pretend. The `delayed` decorator makes sure that the integrator is never called, we just store the information that we *want* to call the `fine` function. The resulting value is a *promise* that at some point we *will* call the `fine` function. The nice thing is, that this promise behaves like any other Python object, it even qualifies as a `Vector`! The `tabulate` routine returns a `Sequence` of `Vector`s, in this case a list of promises. The `gather` function takes a list of promises and turns it into a promise of a list.
 
-``` {.python #noodlify}
-y_euler = noodles.gather(
+``` {.python #daskify}
+y_euler = gather(
     *tabulate(fine, [1.0, 0.0], t))
 ```
 
 We can draw the resulting workflow:
 
-``` {.python #noodlify}
+``` {.python #daskify}
 def paint(node, name):
     if name == "coarse":
         node.attr["fillcolor"] = "#cccccc"
@@ -383,33 +386,33 @@ def paint(node, name):
     else:
         node.attr["fillcolor"] = "#ffffff"
 
-draw_workflow('seq-graph.svg', noodles.get_workflow(y_euler), paint)
+y_euler.visualize("seq-graph.svg")
 ```
 
 ![Sequential integration](./img/seq-graph.svg){width=50%}
 
 This workflow is entirely sequential, every step depending on the preceding one. Now for Parareal! We also define the `coarse` integrator.
 
-``` {.python #noodlify}
-@noodles.schedule
+``` {.python #daskify}
+@delayed
 def coarse(x, t_0, t_1):
     return forward_euler(f)(x, t_0, t_1)
 ```
 
 Parareal is initialised with the ODE integrated by the coarse integrator, just like we did before with the fine one.
 
-``` {.python #noodlify}
-y_first = noodles.gather(*tabulate(coarse, [1.0, 0.0], t))
+``` {.python #daskify}
+y_first = gather(*tabulate(coarse, [1.0, 0.0], t))
 ```
 
 We can now perform a single iteration of Parareal to see what the workflow looks like:
 
-``` {.python #noodlify}
-y_parareal = noodles.gather(*parareal(coarse, fine)(y_first, t))
+``` {.python #daskify}
+y_parareal = gather(*parareal(coarse, fine)(y_first, t))
 ```
 
-``` {.python #noodlify}
-draw_workflow('parareal-graph.svg', noodles.get_workflow(y_parareal), paint)
+``` {.python #daskify}
+y_parallel.visualize("parareal-graph.svg")
 ```
 
 ![Parareal iteration; the fine integrators (green) can be run in parallel.](./img/parareal-graph.svg)
@@ -419,6 +422,6 @@ draw_workflow('parareal-graph.svg', noodles.get_workflow(y_parareal), paint)
 ``` {.python file=examples/harmonic_oscillator.py}
 <<plot-harmonic-oscillator>>
 
-<<noodlify>>
+<<daskify>>
 ```
 

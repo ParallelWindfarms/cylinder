@@ -9,7 +9,7 @@ from functools import partial
 from pintFoam.parareal import (parareal, tabulate)
 from pintFoam import (BaseCase, foam, block_mesh)
 from pintFoam.vector import (Vector)
-from pintFoam.solution import (map_fields)
+from pintFoam.foam import (map_fields)
 
 fields = ["p", "U", "pMean", "pPrime2Mean", "U_0", "UMean", "UPrime2Mean"]
 
