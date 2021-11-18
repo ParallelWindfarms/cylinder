@@ -109,11 +109,9 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li><a href="#problem">Problem</a></li>
 <li><a href="#parareal">Parareal</a></li>
-<li><a href="#create-example-file">Create example file</a></li>
-<li><a href="#interface-with-the-parareal-module">Interface with the Parareal module</a></li>
+<li><a href="#vectors">Vectors</a></li>
 <li><a href="#openfoam-calls">OpenFOAM calls</a></li>
 <li><a href="#appendix-a-utils">Appendix A: Utils</a></li>
-<li><a href="#input-and-output">Input and Output</a></li>
 </ul>
 </div>
 </nav>
@@ -420,9 +418,18 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <span id="daskify-11"><a href="#daskify-11" aria-hidden="true" tabindex="-1"></a>    ( parareal )</span>
 <span id="daskify-12"><a href="#daskify-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="daskify-13"><a href="#daskify-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="daskify-14"><a href="#daskify-14" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
-<span id="daskify-15"><a href="#daskify-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gather(<span class="op">*</span>args):</span>
-<span id="daskify-16"><a href="#daskify-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">list</span>(args)</span></code></pre></div>
+<span id="daskify-14"><a href="#daskify-14" aria-hidden="true" tabindex="-1"></a>attrs <span class="op">=</span> {}</span>
+<span id="daskify-15"><a href="#daskify-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="daskify-16"><a href="#daskify-16" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> green(f):</span>
+<span id="daskify-17"><a href="#daskify-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> greened(<span class="op">*</span>args):</span>
+<span id="daskify-18"><a href="#daskify-18" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> f(<span class="op">*</span>args)</span>
+<span id="daskify-19"><a href="#daskify-19" aria-hidden="true" tabindex="-1"></a>        attrs[node.key] <span class="op">=</span> {<span class="st">&quot;fillcolor&quot;</span>: <span class="st">&quot;#8888cc&quot;</span>, <span class="st">&quot;style&quot;</span>: <span class="st">&quot;filled&quot;</span>}</span>
+<span id="daskify-20"><a href="#daskify-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> node</span>
+<span id="daskify-21"><a href="#daskify-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> greened</span>
+<span id="daskify-22"><a href="#daskify-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="daskify-23"><a href="#daskify-23" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
+<span id="daskify-24"><a href="#daskify-24" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gather(<span class="op">*</span>args):</span>
+<span id="daskify-25"><a href="#daskify-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">list</span>(args)</span></code></pre></div>
 </div>
 <p>To see what Noodles does, first we’ll daskify the direct integration routine in <code>tabulate</code>. We take the same harmonic oscillator we had before. For the sake of argument let’s divide the time line in three steps (so four points).</p>
 <div class="annotated-code">
@@ -437,31 +444,23 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <p><span><em>«daskify»+</em></span></p>
 <div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>h <span class="op">=</span> <span class="fl">0.01</span></span>
 <span id="daskify-2"><a href="#daskify-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="daskify-3"><a href="#daskify-3" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
-<span id="daskify-4"><a href="#daskify-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(x, t_0, t_1):</span>
-<span id="daskify-5"><a href="#daskify-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> iterate_solution(forward_euler(f), h)(x, t_0, t_1)</span></code></pre></div>
+<span id="daskify-3"><a href="#daskify-3" aria-hidden="true" tabindex="-1"></a><span class="at">@green</span></span>
+<span id="daskify-4"><a href="#daskify-4" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
+<span id="daskify-5"><a href="#daskify-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(x, t_0, t_1):</span>
+<span id="daskify-6"><a href="#daskify-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> iterate_solution(forward_euler(f), h)(x, t_0, t_1)</span></code></pre></div>
 </div>
 <p>It doesn’t really matter what the fine integrator does, since we won’t run anything. We’ll just pretend. The <code>delayed</code> decorator makes sure that the integrator is never called, we just store the information that we <em>want</em> to call the <code>fine</code> function. The resulting value is a <em>promise</em> that at some point we <em>will</em> call the <code>fine</code> function. The nice thing is, that this promise behaves like any other Python object, it even qualifies as a <code>Vector</code>! The <code>tabulate</code> routine returns a <code>Sequence</code> of <code>Vector</code>s, in this case a list of promises. The <code>gather</code> function takes a list of promises and turns it into a promise of a list.</p>
 <div class="annotated-code">
 <p><span><em>«daskify»+</em></span></p>
-<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>y_euler <span class="op">=</span> gather(</span>
-<span id="daskify-2"><a href="#daskify-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>tabulate(fine, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t))</span></code></pre></div>
+<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>y_euler <span class="op">=</span> tabulate(fine, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t)</span></code></pre></div>
 </div>
 <p>We can draw the resulting workflow:</p>
 <div class="annotated-code">
 <p><span><em>«daskify»+</em></span></p>
-<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> paint(node, name):</span>
-<span id="daskify-2"><a href="#daskify-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> name <span class="op">==</span> <span class="st">&quot;coarse&quot;</span>:</span>
-<span id="daskify-3"><a href="#daskify-3" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#cccccc&quot;</span></span>
-<span id="daskify-4"><a href="#daskify-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> name <span class="op">==</span> <span class="st">&quot;fine&quot;</span>:</span>
-<span id="daskify-5"><a href="#daskify-5" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#88ff88&quot;</span></span>
-<span id="daskify-6"><a href="#daskify-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="daskify-7"><a href="#daskify-7" aria-hidden="true" tabindex="-1"></a>        node.attr[<span class="st">&quot;fillcolor&quot;</span>] <span class="op">=</span> <span class="st">&quot;#ffffff&quot;</span></span>
-<span id="daskify-8"><a href="#daskify-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="daskify-9"><a href="#daskify-9" aria-hidden="true" tabindex="-1"></a>y_euler.visualize(<span class="st">&quot;seq-graph.svg&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>gather(<span class="op">*</span>y_euler).visualize(<span class="st">&quot;seq-graph.svg&quot;</span>, rankdir<span class="op">=</span><span class="st">&quot;LR&quot;</span>, data_attributes<span class="op">=</span>attrs)</span></code></pre></div>
 </div>
 <figure>
-<img src="./img/seq-graph.svg" style="width:50.0%" alt="Sequential integration" /><figcaption aria-hidden="true">Sequential integration</figcaption>
+<img src="./img/seq-graph.svg" alt="Sequential integration" /><figcaption aria-hidden="true">Sequential integration</figcaption>
 </figure>
 <p>This workflow is entirely sequential, every step depending on the preceding one. Now for Parareal! We also define the <code>coarse</code> integrator.</p>
 <div class="annotated-code">
@@ -473,7 +472,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <p>Parareal is initialised with the ODE integrated by the coarse integrator, just like we did before with the fine one.</p>
 <div class="annotated-code">
 <p><span><em>«daskify»+</em></span></p>
-<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>y_first <span class="op">=</span> gather(<span class="op">*</span>tabulate(coarse, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t))</span></code></pre></div>
+<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>y_first <span class="op">=</span> tabulate(coarse, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t)</span></code></pre></div>
 </div>
 <p>We can now perform a single iteration of Parareal to see what the workflow looks like:</p>
 <div class="annotated-code">
@@ -482,19 +481,19 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div class="annotated-code">
 <p><span><em>«daskify»+</em></span></p>
-<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>y_parallel.visualize(<span class="st">&quot;parareal-graph.svg&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="daskify"><pre class="sourceCode python"><code class="sourceCode python"><span id="daskify-1"><a href="#daskify-1" aria-hidden="true" tabindex="-1"></a>y_parareal.visualize(<span class="st">&quot;parareal-graph.svg&quot;</span>, rankdir<span class="op">=</span><span class="st">&quot;LR&quot;</span>, data_attributes<span class="op">=</span>attrs)</span></code></pre></div>
 </div>
 <figure>
-<img src="./img/parareal-graph.svg" alt="Parareal iteration; the fine integrators (green) can be run in parallel." /><figcaption aria-hidden="true">Parareal iteration; the fine integrators (green) can be run in parallel.</figcaption>
+<img src="./img/parareal-graph.svg" alt="Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel." /><figcaption aria-hidden="true">Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel.</figcaption>
 </figure>
-<h1 id="create-example-file">Create example file</h1>
+<h3 id="create-example-file">Create example file</h3>
 <div class="annotated-code">
 <p><span><em>«examples/harmonic_oscillator.py»=</em></span></p>
 <div class="sourceCode" id="cb9" data-file="examples/harmonic_oscillator.py"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>plot<span class="op">-</span>harmonic<span class="op">-</span>oscillator<span class="op">&gt;&gt;</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>daskify<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
-<h1 id="interface-with-the-parareal-module">Interface with the Parareal module</h1>
+<h1 id="vectors">Vectors</h1>
 <p>We need to define the following:</p>
 <blockquote>
 <dl>
@@ -515,7 +514,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 </dd>
 </dl>
 </blockquote>
-<h2 id="vector">Vector</h2>
+<h2 id="implementation">Implementation</h2>
 <p>The abstract <code>Vector</code>, defined below, represents any single state in the simulation. In OpenFOAM we have the following folder structure:</p>
 <pre><code>├── 0
 │   ├── p
@@ -629,7 +628,7 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="pintfoam-vector-21"><a href="#pintfoam-vector-21" aria-hidden="true" tabindex="-1"></a>        [s.name <span class="cf">for</span> s <span class="kw">in</span> path.iterdir() <span class="cf">if</span> isfloat(s.name)],</span>
 <span id="pintfoam-vector-22"><a href="#pintfoam-vector-22" aria-hidden="true" tabindex="-1"></a>        key<span class="op">=</span><span class="bu">float</span>)</span></code></pre></div>
 </div>
-<h3 id="vector-1">Vector</h3>
+<h3 id="vector">Vector</h3>
 <p>The <code>Vector</code> class stores a reference to the <code>BaseCase</code>, a case name and a time.</p>
 <div class="annotated-code">
 <p><span><em>«pintfoam-vector»+</em></span></p>
@@ -932,8 +931,6 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="push-dir-34"><a href="#push-dir-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
 <span id="push-dir-35"><a href="#push-dir-35" aria-hidden="true" tabindex="-1"></a>        os.chdir(prev)</span></code></pre></div>
 </div>
-<h1 id="input-and-output">Input and Output</h1>
-<p>There are utilities that read OpenFOAM files, but they are all broken.</p>
 </div></main>
 
 

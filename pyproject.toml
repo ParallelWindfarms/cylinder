@@ -19,6 +19,8 @@ dask = {extras = ["complete"], version = "^2021.11.1"}
 entangled-filters = "^0.8.3"
 pandoc-eqnos = "^2.5.0"
 pandoc-fignos = "^2.4.0"
+matplotlib = "^3.5.0"
+graphviz = "^0.18.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

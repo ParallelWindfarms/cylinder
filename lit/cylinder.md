@@ -1,4 +1,4 @@
-# Interface with the Parareal module
+# Vectors
 We need to define the following:
 
 > `Vector`
@@ -21,7 +21,7 @@ We need to define the following:
 >
 > : The *coarse* solution is the solution that is fast but less accurate.
 
-## Vector
+## Implementation
 The abstract `Vector`, defined below, represents any single state in the simulation. In OpenFOAM we have the following folder structure:
 
 ```

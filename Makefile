@@ -18,7 +18,7 @@
 #
 # You should list the Markdown sources here in the order that they should
 # appear.
-input_files := README.md lit/paranoodles.md lit/cylinder.md lit/io.md
+input_files := README.md lit/parareal.md lit/cylinder.md
 
 # Arguments to Pandoc; these are reasonable defaults
 pandoc_args += --template bootstrap/template.html

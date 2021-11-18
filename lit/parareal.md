@@ -344,6 +344,15 @@ from pintFoam.parareal.parareal import \
     ( parareal )
 
 
+attrs = {}
+
+def green(f):
+    def greened(*args):
+        node = f(*args)
+        attrs[node.key] = {"fillcolor": "#8888cc", "style": "filled"}
+        return node
+    return greened
+
 @delayed
 def gather(*args):
     return list(args)
@@ -363,6 +372,7 @@ We now define the `fine` integrator:
 ```{.python #daskify}
 h = 0.01
 
+@green
 @delayed
 def fine(x, t_0, t_1):
     return iterate_solution(forward_euler(f), h)(x, t_0, t_1)
@@ -371,25 +381,16 @@ def fine(x, t_0, t_1):
 It doesn't really matter what the fine integrator does, since we won't run anything. We'll just pretend. The `delayed` decorator makes sure that the integrator is never called, we just store the information that we *want* to call the `fine` function. The resulting value is a *promise* that at some point we *will* call the `fine` function. The nice thing is, that this promise behaves like any other Python object, it even qualifies as a `Vector`! The `tabulate` routine returns a `Sequence` of `Vector`s, in this case a list of promises. The `gather` function takes a list of promises and turns it into a promise of a list.
 
 ``` {.python #daskify}
-y_euler = gather(
-    *tabulate(fine, [1.0, 0.0], t))
+y_euler = tabulate(fine, [1.0, 0.0], t)
 ```
 
 We can draw the resulting workflow:
 
 ``` {.python #daskify}
-def paint(node, name):
-    if name == "coarse":
-        node.attr["fillcolor"] = "#cccccc"
-    elif name == "fine":
-        node.attr["fillcolor"] = "#88ff88"
-    else:
-        node.attr["fillcolor"] = "#ffffff"
-
-y_euler.visualize("seq-graph.svg")
+gather(*y_euler).visualize("seq-graph.svg", rankdir="LR", data_attributes=attrs)
 ```
 
-![Sequential integration](./img/seq-graph.svg){width=50%}
+![Sequential integration](./img/seq-graph.svg)
 
 This workflow is entirely sequential, every step depending on the preceding one. Now for Parareal! We also define the `coarse` integrator.
 
@@ -402,7 +403,7 @@ def coarse(x, t_0, t_1):
 Parareal is initialised with the ODE integrated by the coarse integrator, just like we did before with the fine one.
 
 ``` {.python #daskify}
-y_first = gather(*tabulate(coarse, [1.0, 0.0], t))
+y_first = tabulate(coarse, [1.0, 0.0], t)
 ```
 
 We can now perform a single iteration of Parareal to see what the workflow looks like:
@@ -412,12 +413,12 @@ y_parareal = gather(*parareal(coarse, fine)(y_first, t))
 ```
 
 ``` {.python #daskify}
-y_parallel.visualize("parareal-graph.svg")
+y_parareal.visualize("parareal-graph.svg", rankdir="LR", data_attributes=attrs)
 ```
 
-![Parareal iteration; the fine integrators (green) can be run in parallel.](./img/parareal-graph.svg)
+![Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel.](./img/parareal-graph.svg)
 
-# Create example file
+### Create example file
 
 ``` {.python file=examples/harmonic_oscillator.py}
 <<plot-harmonic-oscillator>>
