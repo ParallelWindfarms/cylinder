@@ -26,18 +26,9 @@ jobs:
       run: |
         poetry install -v
 
-    - name: Locate OpenFOAM
-      id: locate-openfoam
-      run: |
-        ls -l /usr/lib/openfoam/openfoam2106/etc/bashrc
-
-    - name: Enable OpenFOAM
-      id: enable-openfoam
-      run: |
-        source /usr/lib/openfoam/openfoam2106/etc/bashrc
-      shell: bash
-
     - name: Run tests
       id: run-tests
       run: |
+        set +x
+        source /usr/lib/openfoam/openfoam2106/etc/bashrc
         poetry run pytest
