@@ -32,3 +32,4 @@ jobs:
         set +x
         source /usr/lib/openfoam/openfoam2106/etc/bashrc
         poetry run pytest
+      shell: bash
