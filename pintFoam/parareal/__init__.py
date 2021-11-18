@@ -4,9 +4,5 @@ from .tabulate_solution import tabulate
 from .parareal import parareal
 from . import abstract
 
-from noodles import schedule
-from noodles.run.threading.sqlite3 import run_parallel as run
-
-__all__ = ["tabulate", "parareal", "schedule",
-           "run", "abstract", "schedule"]
+__all__ = ["tabulate", "parareal", "schedule", "abstract"]
 # ~\~ end

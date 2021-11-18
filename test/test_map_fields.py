@@ -2,7 +2,7 @@ from pathlib import Path
 from shutil import copytree
 
 from pintFoam.vector import BaseCase
-from pintFoam.solution import (block_mesh, foam, map_fields)
+from pintFoam.foam import (block_mesh, foam, map_fields)
 
 cylinder_fields = ["p", "U", "phi", "phi_0", "pMean", "pPrime2Mean", "U_0", "UMean", "UPrime2Mean"]
 

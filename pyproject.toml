@@ -16,6 +16,9 @@ byteparsing = "^0.1.2"
 numpy = "^1.21.2"
 argh = "^0.26.2"
 dask = {extras = ["complete"], version = "^2021.11.1"}
+entangled-filters = "^0.8.3"
+pandoc-eqnos = "^2.5.0"
+pandoc-fignos = "^2.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

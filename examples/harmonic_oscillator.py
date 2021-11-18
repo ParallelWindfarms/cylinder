@@ -4,11 +4,11 @@
 import matplotlib.pylab as plt
 import numpy as np
 
-from parareal.harmonic_oscillator import \
+from pintFoam.parareal.harmonic_oscillator import \
     ( harmonic_oscillator, underdamped_solution )
-from parareal.forward_euler import \
+from pintFoam.parareal.forward_euler import \
     ( forward_euler )
-from parareal.tabulate_solution import \
+from pintFoam.parareal.tabulate_solution import \
     ( tabulate )
 
 omega_0 = 1.0

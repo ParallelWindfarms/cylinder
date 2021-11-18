@@ -1,98 +1,48 @@
-# PyFOAM
-
-PyFOAM is not so well documented. For our application we'd like to do two things: modify the run-directory and run `icoFoam`. We'll start with the following modules:
-
-- `PyFoam.Execution`
-- `PyFoam.RunDictionary`
-- `PyFoam.LogAnalysis`
-
-The PyFAOM module comes with a lot of tools to analyse the logs that are being created so fanatically by the solvers.
-
-## Running `elbow` example
-
-To run the "elbow" example:
-
-``` {.python #elbow-example}
-from PyFoam.Execution.AnalyzedRunner import AnalyzedRunner
-from PyFoam.LogAnalysis.StandardLogAnalyzer import StandardLogAnalyzer
-```
-
-The `AnalyzedRunner` runs a command and sends the results to an `Analyzer` object, all found in the `PyFoam.LogAnalysis` module, in this case the `StandardLogAnalyzer`.
-
-``` {.python session=0}
-import numpy as np
-from pathlib import Path
-from pintFoam.utils import pushd
-
-path = Path("./elbow").absolute()
-solver = "icoFoam"
-
-with pushd(path):
-    run = AnalyzedRunner(StandardLogAnalyzer(), argv=[solver], silent=True)
-    run.start()
-```
-
-### Get results
-
-All access to files goes through the `PyFoam.RunDictionary` submodule.
-
-``` {.python session=0}
-from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
-dire = SolutionDirectory(path)
-```
-
-Query for the time slices,
-
-``` {.python session=0}
-dire.times
-```
-
-And read some result data,
-
-``` {.python session=0 clip-output=4}
-p = dire[10]['p'].getContent()['internalField']
-np.array(p.val)
-```
-
-### Clear results
-
-``` {.python session=0}
-dire.clearResults()
-```
-
-### Change integration interval and time step
-
-We'll now access the `controlDict` file.
-
-``` {.python session=0}
-from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
-controlDict = ParsedParameterFile(dire.controlDict())
-controlDict.content
-```
-
-change the end time
-
-``` {.python session=0}
-controlDict['endTime'] = 20
-controlDict.writeFile()
-```
-
-# Interface with ParaNoodles
+# Interface with the Parareal module
 We need to define the following:
 
-* `Vector`
-* fine `Solution`
-* coarse `Solution`
-* coarsening operator
-* refinement operator (interpolation)
-
-The last two steps will require the use of the `mapFields` utility in OpenFOAM and may require some tweaking to work out.
-
-- [ ] figure out how to work `mapFields`, and make this scriptable from Python.
+> `Vector`
+>
+> : A `Vector` is an object that represents the state of a solution at any one time. On this state we need to be able to do addition, subtraction and scalar multiplication, in order to perform the Parareal algorithm.
+>
+> `Solution`
+>
+> : A `Solution` is a function that takes an initial `Vector`, a time `t_0` and a time `t`, returning the state `Vector` at time `t`.
+>
+> `Mapping`
+>
+> : A `Mapping` is a function from one state `Vector` to another, for example a mapping from a coarse to a fine mesh or vice-versa.
+>
+> Fine `Solution`
+>
+> : The *fine* solution is the solution at the desired resolution. If we were not doing parallel-in-time, this would be the integrator to get at the correct result. We may also use the fine solution to find a ground thruth in testing the Parareal solution.
+>
+> Coarse `Solution`
+>
+> : The *coarse* solution is the solution that is fast but less accurate.
 
 ## Vector
+The abstract `Vector`, defined below, represents any single state in the simulation. In OpenFOAM we have the following folder structure:
 
-The abstract `Vector`, defined below, represents any single state in the simulation. It consists of a `RunDirectory` and a time-frame.
+```
+├── 0
+│   ├── p
+│   └── U
+├── 1
+│   └── <... data fields ...>
+├── <... time directories ...>
+├── constant
+│   ├── transportProperties
+│   └── turbulenceProperties
+└── system
+    ├── blockMeshDict
+    ├── controlDict
+    ├── decomposeParDict
+    ├── fvSchemes
+    └── fvSolution
+```
+
+For our application a `Vector` is then a combination of an OpenFOAM case (i.e. the folder structure above), and a string denoting the time directory matching the referred snapshot. The directory structure containing only the `0` time is now the `BaseCase`. We can copy a `Vector` by copying the contents of the `BaseCase` and the single time directory that belongs to that `Vector`.
 
 ``` {.python file=pintFoam/vector.py}
 from __future__ import annotations
@@ -108,7 +58,6 @@ from shutil import copytree, rmtree   # , copy
 from typing import List, Optional
 
 from byteparsing import parse_bytes, foam_file
-# from .utils import pushd
 
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile  # type: ignore
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type: ignore
@@ -124,7 +73,7 @@ We will operate on a `Vector` the same way everything is done in OpenFOAM, that 
 2. Edit the copy with new simulation parameters
 3. Run the simulation
 
-This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory containing the initial conditions, namely `0`. The simulation generates new folders containing the data corresponding to different times. The time is coded, somewhat uncomfortably, in the directory name (`0.01`, `0.02`, and so on).
+This is why for every `Vector` we define a `BaseCase` that is used to generate new vectors. The `BaseCase` should have only one time directory containing the initial conditions, namely `0`. The simulation generates new folders containing the data corresponding to different times. The time is coded, somewhat uncomfortably, in the directory name (`0.01`, `0.02`, and so on), which is why we store the time coordinate as a string.
 
 The class `Vector` takes care of all those details.
 
@@ -194,6 +143,7 @@ def get_times(path):
 ```
 
 ### Vector
+The `Vector` class stores a reference to the `BaseCase`, a case name and a time.
 
 ``` {.python #pintfoam-vector}
 @dataclass
@@ -230,7 +180,11 @@ def all_times(self):
     """Get all available times, in order."""
     return [Vector(self.base, self.case, t)
             for t in get_times(self.path)]
+```
 
+We do arithmetic on `Vector` by cloning an existing `Vector` and then modify the `internalField` values inside. This can be done very efficiently using memory-mapped array access. The `mmap_data` member takes care of loading the data and closing the file when we're done with it in a nifty context manager.
+
+``` {.python #pintfoam-vector-properties}
 @contextmanager
 def mmap_data(self, field):
     """Context manager that yields a **mutable** reference to the data contained
@@ -297,11 +251,24 @@ def __mul__(self, scale: float) -> Vector:
 
 In the code chunk above we used the so-called magic methods. If we use a minus sign to subtract two vectors, the method `__sub__` is being executed under the hood.
 
-### `setFields` utility
+# OpenFOAM calls
 
+``` {.python file=pintFoam/foam.py}
+import subprocess
+import math
+from typing import Optional, Union
+
+from .vector import (BaseCase, Vector, parameter_file, get_times)
+
+<<pintfoam-map-fields>>
+<<pintfoam-set-fields>>
+<<pintfoam-block-mesh>>
+<<pintfoam-epsilon>>
+<<pintfoam-solution>>
+```
+
+## `setFields` utility
 We may want to call `setFields` on our `Vector` to setup some test cases.
-
-- [ ] add doc-string
 
 ``` {.python #pintfoam-set-fields}
 def set_fields(v, *, default_field_values, regions):
@@ -313,37 +280,10 @@ def set_fields(v, *, default_field_values, regions):
     subprocess.run("setFields", cwd=v.path, check=True)
 ```
 
-## Mesh refinement
+## `mapFields`
+The `mapFields` utility interpolates a field from one mesh onto another. The resulting field values are written to the `0` time directory, so we need to rename that directory after calling `mapFields` for consistency with the `Vector` infrastrucutre.
 
-``` {.python file=pintFoam/foamTools.py}
-from dataclasses import dataclass
-from typing import Callable
-
-
-```
-
-## Solution
-
-Remember, the definition of a `Solution`,
-
-``` {.python}
-Solution = Callable[[Vector, float, float], Vector]
-```
-
-meaning, we write a function taking a current state `Vector`, the time *now*, and the *target* time, returning a new `Vector`.
-
-
-``` {.python file=pintFoam/solution.py}
-import subprocess
-import math
-from typing import Optional, Union
-
-from .vector import (BaseCase, Vector, parameter_file, get_times)
-
-def block_mesh(case: BaseCase):
-    """Wrapper for OpenFOAM's blockMesh."""
-    subprocess.run("blockMesh", cwd=case.path, check=True)
-
+``` {.python #pintfoam-map-fields}
 def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=None) -> Vector:
     """Wrapper for OpenFOAM's mapFields
 
@@ -361,11 +301,25 @@ def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=Non
     subprocess.run(arg_lst, cwd=result.path, check=True)
     (result.path / "0").rename(result.dirname)
     return result
-
-<<pintfoam-set-fields>>
-<<pintfoam-epsilon>>
-<<pintfoam-solution>>
 ```
+
+## `blockMesh`
+The `blockMesh` utility generates an OpenFOAM mesh from a description in the `blockMesh` format. This is usually called on a `baseCase` so that the mesh information is shared by all vectors.
+
+``` {.python #pintfoam-block-mesh}
+def block_mesh(case: BaseCase):
+    """Wrapper for OpenFOAM's blockMesh."""
+    subprocess.run("blockMesh", cwd=case.path, check=True)
+```
+
+## Implementation of `Solution`
+Remember, the definition of a `Solution`,
+
+``` {.python}
+Solution = Callable[[Vector, float, float], Vector]
+```
+
+meaning, we write a function taking a current state `Vector`, the time *now*, and the *target* time, returning a new `Vector` for the target time.
 
 The solver will write directories with floating-point valued names. This is a very bad idea by the folks at OpenFOAM, but it is one we'll have to live with. Suppose you have a time-step of $0.1$, what will be the names of the directories if you integrate from $0$ to $0.5$?
 
@@ -409,17 +363,16 @@ The solver clones a new vector, sets the `controlDict`, runs the solver and then
 assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
 y = x.clone(job_name)
 write_interval = write_interval or (t_1 - t_0)
-backup = open(y.path / "system" / "controlDict", "r").read()
 <<set-control-dict>>
 <<run-solver>>
 <<return-result>>
 ```
 
 ### `controlDict`
-
-- [x] check if this is enough to have Adios 'restart' from the correct time
+Because writing the `controlDict` sometimes fails, we try it a few times. For this we need to create a backup of the original contents of `controlDict`.
 
 ``` {.python #set-control-dict}
+backup = open(y.path / "system" / "controlDict", "r").read()
 for i in range(5):   # this sometimes fails, so we try a few times, maybe disk sync issue?
     try:
         print(f"Attempt {i+1} at writing controlDict")
@@ -442,123 +395,18 @@ else:
 
 ### Run solver
 
-- [ ] Change `Execution.AnalyzedRunner` to self-coded `subprocess.run` type of operation.
-
 ``` {.python #run-solver}
 with open(y.path / "log.stdout", "w") as logfile, \
      open(y.path / "log.stderr", "w") as errfile:
     subprocess.run(solver, cwd=y.path, check=True, stdout=logfile, stderr=errfile)
-
 ```
 
 ### Return result
+We retrieve the time of the result by looking at the last time directory.
 
 ``` {.python #return-result}
 t1_str = get_times(y.path)[-1]
 return Vector(y.base, y.case, t1_str)
-```
-
-# Running Parareal
-
-``` {.python file=run.py}
-import numpy as np
-
-import noodles
-from noodles.draw_workflow import draw_workflow
-from noodles.run.threading.vanilla import run_parallel
-from noodles.run.process import run_process
-from noodles.run.single.vanilla import run_single
-from noodles.display.simple_nc import Display
-
-from noodles import serial
-from paranoodles import tabulate, parareal
-
-from pintFoam.vector import BaseCase
-from pintFoam.run import (coarse, fine, registry)
-from pathlib import Path
-
-
-def paint(node, name):
-    if name == "coarse":
-        node.attr["fillcolor"] = "#cccccc"
-    elif name == "fine":
-        node.attr["fillcolor"] = "#88ff88"
-    else:
-        node.attr["fillcolor"] = "#ffffff"
-
-if __name__ == "__main__":
-    t = np.linspace(0.0, 1.0, 6)
-    base_case = BaseCase(Path("data/c1").resolve(), "baseCase")
-
-    y = noodles.gather(*tabulate(coarse, base_case.new_vector(), t))
-    s = noodles.gather(*parareal(fine, coarse)(y, t))
-
-    # draw_workflow("wf.svg", noodles.get_workflow(s), paint)
-    result = run_process(s, n_processes=4, registry=registry, verbose=True)
-    # result = run_single(s)
-
-    print(result)
-# base_case.clean()
-```
-
-- [ ] update Noodles registry to work with Adios files.
-
-``` {.python file=pintFoam/run.py}
-from .solution import foam
-from dask import delayed
-
-@delayed
-def fine(x, t_0, t_1):
-    """Example fine integrator."""
-    return foam("icoFoam", 0.05, x, t_0, t_1)
-
-@delayed
-def coarse(x, t_0, t_1):
-    """Example coarse integrator."""
-    return foam("icoFoam", 0.2, x, t_0, t_1)
-
-```
-
-# The User script
-As the final bit, the user should write a (minimal) script for running the simulation. Here we write an example script in the `data` folder. There should be no reusable parts in this script, or they should go into either the `paranoodles` or `pintFoam` module.
-
-Time for a bit of wishful programming
-
-``` {.python file=data/run.py}
-from pathlib import Path
-import numpy as np
-from noodles import (gather)
-from functools import partial
-from paranoodles import (schedule, run, parareal, tabulate)
-from pintFoam import (BaseCase, foam, block_mesh, serial)
-
-
-case = BaseCase(Path("c1"), "baseCase", fields=["p", "U", "phi", "phi_0", "pMean", "pPrime2Mean", "U_0", "UMean", "UPrime2Mean"])
-block_mesh(case)
-
-times = np.linspace(0.0, 350.0, 11)
-
-@schedule
-def fine(n, x, t_0, t_1):
-    """Fine integrator."""
-    return foam("icoFoam", 0.05, x, t_0, t_1,
-                job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-fine")
-
-
-@schedule
-def coarse(n, x, t_0, t_1):
-    """Coarse integrator."""
-    return foam("icoFoam", 1.0, x, t_0, t_1,
-                job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse")
-
-# init = foam("icoFoam", 0.0001, case.new_vector(), 0.0, 0.0)
-init = case.new_vector("init")
-y = gather(*tabulate(partial(coarse, 0), init, times))
-
-for n in range(1, 10):
-    y = gather(*parareal(partial(coarse, n), partial(fine, n))(y, times))
-
-run(y, n_threads=4, registry=serial, db_file="noodles.db")
 ```
 
 # Appendix A: Utils

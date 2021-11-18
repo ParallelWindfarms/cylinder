@@ -15,14 +15,9 @@ Steps:
 
 ![Flow around cylinder with Reynold's number 200.](./img/case-result.png)
 
-To install the requirements, also clone [ParaNoodles](https://github.com/ParallelWindfarms/paranoodles) and run `pip install .` from its project root. To install additional requirements, have OpenFOAM installed and:
-
-```shell
-pip install -r requirements.txt
-```
-
-If you use Python [poetry](https://python-poetry.org/), use this instead:
+To install additional requirements, have OpenFOAM installed and:
 
 ```shell
 poetry install
 ```
+

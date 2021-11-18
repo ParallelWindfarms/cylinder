@@ -5,8 +5,6 @@ from .abstract import (Solution, Mapping)
 def identity(x):
     return x
 
-# ~\~ end
-# ~\~ begin <<lit/paranoodles.md|pintFoam/parareal/parareal.py>>[1]
 def parareal(
         coarse: Solution,
         fine: Solution,
@@ -17,9 +15,11 @@ def parareal(
         y_n = [None] * m
         y_n[0] = y[0]
         for i in range(1, m):
+            # ~\~ begin <<lit/paranoodles.md|parareal-core-2>>[0]
             y_n[i] = c2f(coarse(f2c(y_n[i-1]), t[i-1], t[i])) \
                    + fine(y[i-1], t[i-1], t[i]) \
                    - c2f(coarse(f2c(y[i-1]), t[i-1], t[i]))
+            # ~\~ end
         return y_n
     return f
 # ~\~ end

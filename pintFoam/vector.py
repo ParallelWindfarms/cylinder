@@ -13,7 +13,6 @@ from shutil import copytree, rmtree   # , copy
 from typing import List, Optional
 
 from byteparsing import parse_bytes, foam_file
-# from .utils import pushd
 
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile  # type: ignore
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type: ignore
@@ -101,7 +100,8 @@ class Vector:
         """Get all available times, in order."""
         return [Vector(self.base, self.case, t)
                 for t in get_times(self.path)]
-
+    # ~\~ end
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-properties>>[1]
     @contextmanager
     def mmap_data(self, field):
         """Context manager that yields a **mutable** reference to the data contained

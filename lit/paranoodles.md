@@ -1,19 +1,14 @@
-# Module
+# Parareal
 
 ``` {.python file=pintFoam/parareal/__init__.py}
 from .tabulate_solution import tabulate
 from .parareal import parareal
 from . import abstract
 
-from noodles import schedule
-from noodles.run.threading.sqlite3 import run_parallel as run
-
-__all__ = ["tabulate", "parareal", "schedule",
-           "run", "abstract", "schedule"]
+__all__ = ["tabulate", "parareal", "schedule", "abstract"]
 ```
 
-# Problem statement
-
+## Problem statement
 I tried to implement the problem statement using abstract base classes (`ABC` module) and the `typing` module. However, type annotation in Python is still an immature feature (to say the least, it's next to useless). The little annotation remaining should be considered documentation.
 
 ``` {.python file=pintFoam/parareal/abstract.py}
@@ -235,11 +230,11 @@ def tabulate_np(step: Solution, y_0: Array, t: Array) -> Array:
 import matplotlib.pylab as plt
 import numpy as np
 
-from parareal.harmonic_oscillator import \
+from pintFoam.parareal.harmonic_oscillator import \
     ( harmonic_oscillator, underdamped_solution )
-from parareal.forward_euler import \
+from pintFoam.parareal.forward_euler import \
     ( forward_euler )
-from parareal.tabulate_solution import \
+from pintFoam.parareal.tabulate_solution import \
     ( tabulate )
 
 omega_0 = 1.0
@@ -292,13 +287,21 @@ From Wikipedia:
 
 Don't get blinded by the details of the algorithm. After all, everything boils down to an update equation that uses a state vector $y$ to calculate the state at the immediately next future step (in the same fashion as equation +@eq:euler-method did). The core equation translates to:
 
-``` {.python #parareal-core}
+``` {.python #parareal-core-1}
 y_n[i] = coarse(y_n[i-1], t[i-1], t[i]) \
        + fine(y[i-1], t[i-1], t[i]) \
        - coarse(y[i-1], t[i-1], t[i])
 ```
 
-The rest is boiler plate.
+If we include a `Mapping` between fine and coarse meshes into the equation, we get:
+
+``` {.python #parareal-core-2}
+y_n[i] = c2f(coarse(f2c(y_n[i-1]), t[i-1], t[i])) \
+       + fine(y[i-1], t[i-1], t[i]) \
+       - c2f(coarse(f2c(y[i-1]), t[i-1], t[i]))
+```
+
+The rest is boiler plate. For the `c2f` and `f2c` mappings we provide a default argument of the identity function.
 
 ``` {.python file=pintFoam/parareal/parareal.py}
 from .abstract import (Solution, Mapping)
@@ -306,11 +309,6 @@ from .abstract import (Solution, Mapping)
 def identity(x):
     return x
 
-```
-
-## Including mapping between meshes
-
-``` {.python file=pintFoam/parareal/parareal.py}
 def parareal(
         coarse: Solution,
         fine: Solution,
@@ -321,15 +319,12 @@ def parareal(
         y_n = [None] * m
         y_n[0] = y[0]
         for i in range(1, m):
-            y_n[i] = c2f(coarse(f2c(y_n[i-1]), t[i-1], t[i])) \
-                   + fine(y[i-1], t[i-1], t[i]) \
-                   - c2f(coarse(f2c(y[i-1]), t[i-1], t[i]))
+            <<parareal-core-2>>
         return y_n
     return f
 ```
 
-## Noodlify
-
+## Running in parallel
 The way we implemented the `parareal` function is not very efficient. It's Python, there's a recursion in the dependency, so no way to sweeten it up with `numpy`. Suppose however, that the `fine` solution may take a while to compute, and we only use Python to steer the computation. How can we paralellise the implementation of `parareal`? The answer is: we don't need to! Noodles can do it for us.
 
 ``` {.python #import-noodles}

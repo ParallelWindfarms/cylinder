@@ -7,7 +7,7 @@ import uuid
 from dask import delayed
 from functools import partial
 from pintFoam.parareal import (parareal, tabulate)
-from pintFoam import (BaseCase, foam, block_mesh, serial)
+from pintFoam import (BaseCase, foam, block_mesh)
 from pintFoam.vector import (Vector)
 from pintFoam.solution import (map_fields)
 

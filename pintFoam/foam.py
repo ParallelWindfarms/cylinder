@@ -1,15 +1,12 @@
-# ~\~ language=Python filename=pintFoam/solution.py
-# ~\~ begin <<lit/cylinder.md|pintFoam/solution.py>>[0]
+# ~\~ language=Python filename=pintFoam/foam.py
+# ~\~ begin <<lit/cylinder.md|pintFoam/foam.py>>[0]
 import subprocess
 import math
 from typing import Optional, Union
 
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
-def block_mesh(case: BaseCase):
-    """Wrapper for OpenFOAM's blockMesh."""
-    subprocess.run("blockMesh", cwd=case.path, check=True)
-
+# ~\~ begin <<lit/cylinder.md|pintfoam-map-fields>>[0]
 def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=None) -> Vector:
     """Wrapper for OpenFOAM's mapFields
 
@@ -27,7 +24,7 @@ def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=Non
     subprocess.run(arg_lst, cwd=result.path, check=True)
     (result.path / "0").rename(result.dirname)
     return result
-
+# ~\~ end
 # ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
 def set_fields(v, *, default_field_values, regions):
     """Wrapper for OpenFOAM's setFields."""
@@ -36,6 +33,11 @@ def set_fields(v, *, default_field_values, regions):
     x['regions'] = regions
     x.writeFile()
     subprocess.run("setFields", cwd=v.path, check=True)
+# ~\~ end
+# ~\~ begin <<lit/cylinder.md|pintfoam-block-mesh>>[0]
+def block_mesh(case: BaseCase):
+    """Wrapper for OpenFOAM's blockMesh."""
+    subprocess.run("blockMesh", cwd=case.path, check=True)
 # ~\~ end
 # ~\~ begin <<lit/cylinder.md|pintfoam-epsilon>>[0]
 epsilon = 1e-6
@@ -63,8 +65,8 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
     assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
     y = x.clone(job_name)
     write_interval = write_interval or (t_1 - t_0)
-    backup = open(y.path / "system" / "controlDict", "r").read()
     # ~\~ begin <<lit/cylinder.md|set-control-dict>>[0]
+    backup = open(y.path / "system" / "controlDict", "r").read()
     for i in range(5):   # this sometimes fails, so we try a few times, maybe disk sync issue?
         try:
             print(f"Attempt {i+1} at writing controlDict")
@@ -88,7 +90,6 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
     with open(y.path / "log.stdout", "w") as logfile, \
          open(y.path / "log.stderr", "w") as errfile:
         subprocess.run(solver, cwd=y.path, check=True, stdout=logfile, stderr=errfile)
-
     # ~\~ end
     # ~\~ begin <<lit/cylinder.md|return-result>>[0]
     t1_str = get_times(y.path)[-1]
