@@ -30,6 +30,6 @@ jobs:
       id: run-tests
       run: |
         set +o pipefail
-        source /usr/lib/openfoam/openfoam2106/etc/bashrc
+        source /usr/lib/openfoam/openfoam2106/etc/bashrc || true
         poetry run pytest
       shell: bash
