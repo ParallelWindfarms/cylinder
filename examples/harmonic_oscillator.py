@@ -87,6 +87,6 @@ y_first = tabulate(coarse, [1.0, 0.0], t)
 y_parareal = gather(*parareal(coarse, fine)(y_first, t))
 # ~\~ end
 # ~\~ begin <<lit/parareal.md|daskify>>[8]
-y_parareal.visualize("parareal-graph.svg", rankdir="LR", data_attributes=attrs)
+y_parareal.visualize("parareal-graph.pdf", rankdir="LR", data_attributes=attrs)
 # ~\~ end
 # ~\~ end

@@ -413,7 +413,7 @@ y_parareal = gather(*parareal(coarse, fine)(y_first, t))
 ```
 
 ``` {.python #daskify}
-y_parareal.visualize("parareal-graph.svg", rankdir="LR", data_attributes=attrs)
+y_parareal.visualize("parareal-graph.pdf", rankdir="LR", data_attributes=attrs)
 ```
 
 ![Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel.](./img/parareal-graph.svg)
