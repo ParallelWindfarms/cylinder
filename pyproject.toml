@@ -5,7 +5,7 @@ description = "Parallel-in-time demo, computing flow around cylinder using OpenF
 authors = ["Johan Hidding <j.hidding@esciencecenter.nl>"]
 license = "Apache-2.0"
 packages = [
-    { include = "pintFoam/**/*.py" },
+    { include = "pintFoam" },
 ]
 readme = "README.md"
 

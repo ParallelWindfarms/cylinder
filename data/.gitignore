@@ -2,6 +2,7 @@
 !c1/baseCase
 !c7_coarse/baseCase
 !c7_fine/baseCase
-!run.py
-!run_c7.py
-
+!cylinder_run.py
+!pipeFlow_run.py
+!pipeFlowCoarse/baseCase
+!pipeFlowFine/baseCase
