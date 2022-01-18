@@ -43,7 +43,7 @@ a:hover {
 }
 
 #main h1 {
-      border-bottom: thin solid #ddd;  
+      border-bottom: thin solid #ddd;
 }
 
 #main p {
@@ -51,7 +51,7 @@ a:hover {
 
 header h1 {
         color: white;
-        font-size: 20pt;
+        font-size: 40pt;
         padding: 10pt 10pt 0 10pt;
         margin-bottom: 0;
 }
@@ -189,7 +189,7 @@ code {
   }
   #menu-container { order: 1; }
   #main { order: 2; }
-      
+
   /* For tablets: */
   .col-s-1 {width: 8.33%;}
   .col-s-2 {width: 16.66%;}
@@ -213,20 +213,17 @@ header {
 
 header h1 {
         font-size: 40pt;
-        background: #00000080;
         padding: 20pt 20pt 0 20pt;
         margin-bottom: 0;
 }
 
 header .subtitle {
-        background: #00000080;
         padding: 20pt;
         padding-top: 0;
         margin-top: 0;
 }
 
 header .author {
-        background: #00000080;
         padding: 20pt;
         margin-top: 0;
 }
@@ -242,7 +239,7 @@ header .author {
   }
   #menu-container { order: 1; }
   #main { order: 2; }
-      
+
   .menu {
           align-self: flex-start;
           position: sticky;

@@ -1,25 +1,6 @@
-# Vectors
-We need to define the following:
+# Architecture
+From the perspective of the Parareal algorithm we are solving an ODE.
 
-> `Vector`
->
-> : A `Vector` is an object that represents the state of a solution at any one time. On this state we need to be able to do addition, subtraction and scalar multiplication, in order to perform the Parareal algorithm.
->
-> `Solution`
->
-> : A `Solution` is a function that takes an initial `Vector`, a time `t_0` and a time `t`, returning the state `Vector` at time `t`.
->
-> `Mapping`
->
-> : A `Mapping` is a function from one state `Vector` to another, for example a mapping from a coarse to a fine mesh or vice-versa.
->
-> Fine `Solution`
->
-> : The *fine* solution is the solution at the desired resolution. If we were not doing parallel-in-time, this would be the integrator to get at the correct result. We may also use the fine solution to find a ground thruth in testing the Parareal solution.
->
-> Coarse `Solution`
->
-> : The *coarse* solution is the solution that is fast but less accurate.
 
 ## Implementation
 The abstract `Vector`, defined below, represents any single state in the simulation. In OpenFOAM we have the following folder structure:

@@ -8,17 +8,39 @@ from . import abstract
 __all__ = ["tabulate", "parareal", "schedule", "abstract"]
 ```
 
-## Problem statement
-I tried to implement the problem statement using abstract base classes (`ABC` module) and the `typing` module. However, type annotation in Python is still an immature feature (to say the least, it's next to useless). The little annotation remaining should be considered documentation.
+## Components
+We may present the Parareal algorithm in abstract terms, and match those terms with corresponding type definitions in Python.
+
+We need to define the following:
+
+> `Vector`
+>
+> : A `Vector` is an object that represents the state of a solution at any one time. On this state we need to be able to do addition, subtraction and scalar multiplication, in order to perform the Parareal algorithm.
+>
+> `Solution`
+>
+> : A `Solution` is a function that takes an initial `Vector`, a time `t_0` and a time `t`, returning the state `Vector` at time `t`.
+>
+> `Mapping`
+>
+> : A `Mapping` is a function from one state `Vector` to another, for example a mapping from a coarse to a fine mesh or vice-versa.
+>
+> Fine `Solution`
+>
+> : The *fine* solution is the solution at the desired resolution. If we were not doing parallel-in-time, this would be the integrator to get at the correct result. We may also use the fine solution to find a ground thruth in testing the Parareal solution.
+>
+> Coarse `Solution`
+>
+> : The *coarse* solution is the solution that is fast but less accurate.
 
 ``` {.python file=pintFoam/parareal/abstract.py}
-from __future__ import annotations  # enable self-reference in type annotations
+from __future__ import annotations
 from typing import (Callable, Protocol, TypeVar)
 
 <<abstract-types>>
-Mapping = Callable[[TVector], TVector]
 ```
 
+### Vector
 We have an ODE in the form
 
 $$y' = f(y, t).$${#eq:ode}
@@ -47,10 +69,16 @@ class Vector(Protocol):
 
 ```
 
-_The implementation of the actual methods can be found below in this document._
+_We don't actually need to implement these methods right now. All this is saying, is that any type that has these methods defined can stand in for a `Vector`._
 
-Note that we don't make a distinction here between a state vector and a vector representing a change in state. This may change in the future.
+Note that we don't make a formal distinction here between a state vector and a vector representing a change in state.
 
+
+``` {.python #abstract-types}
+Mapping = Callable[[TVector], TVector]
+```
+
+### Problem
 An ODE is then given as a function taking a `Vector` (the state $y$) and a `float` (the time $t$) returning a `Vector` (the derivative $y' = f(y,t)$ evaluated at $(y,t)$). We define the type `Problem`:
 
 ``` {.python #abstract-types}
@@ -59,8 +87,9 @@ Problem = Callable[[TVector, float], TVector]
 
 In mathematical notation the snippet above means:
 
-$$Problem : (y, t) \longrightarrow f(y, t) = y'$$
+$${\rm Problem} : (y, t) \to f(y, t) = y'$$
 
+### Solution
 If we have a `Problem`, we're after a `Solution`: a function that, given an initial `Vector` (the initial condition $y_0$), initial time ($t_0$) and final time ($t$), gives the resulting `Vector` (the solution, $y(t)$ for the given initial conditions).
 
 ``` {.python #abstract-types}
@@ -69,29 +98,33 @@ Solution = Callable[[TVector, float, float], TVector]
 
 Those readers more familiar with classical physics or mathematics may notice that our `Problem` object corresponds with the function $f$ in (+@eq:ode). The `Solution` object, on the other hand, corresponds with the evolution operator $\phi$ in equation @eq:solution.
 
-$$Solution : (y_0, t_0; t) \longrightarrow \phi(y_0, t_0; t) = y(t).$${#eq:solution}
+$${\rm Solution} : (y_0, t_0; t) \to \phi(y_0, t_0; t) = y.$${#eq:solution}
 
 Intuitively, $\phi$ represents any method that solves (even approximately) our initial value problem.
 
-As a quick example, think of the differential equation $y' = ry$. This can be solved by analytical integration. The `Problem` and  `Solution` objects is in this case are:
+#### Example
+An example of a `Problem` would be the function,
 
-$$ Problem : (y, t) \longrightarrow r y $$
-$$ Solution : (y_0, t_0; t) \longrightarrow y_0 e^{r(t - t_0)} $$
+$$f(y, t) = r y,$$
 
-The challenge is, of course, to find a way of transforming a `Problem` into a `Solution`. This is what integration algorithms do.
+in which case the corresponding `Solution` is,
 
-$$ Integration \ algorithm : Problem \longrightarrow Solution $$
+$$\phi(y_0, t_0; t) = y_0 e^{r(t - t_0)}.$$
 
-If we look a bit closely at the definitions of `Problem` and `Solution` we'll notice that an integration algorithm is indeed a functional that accepts functions of $(y,t)$ as an input and returns functions of $(y_0, t_0, t)$ as an output.
+### Solver
+The challenge is, of course, to find a way of transforming a `Problem` into a `Solution`. This is what integration algorithms, or *solvers* do:
 
-$$ Integration \ algorithm : f \longrightarrow \phi $$
+$${\rm Solver} : {\rm Problem} \to {\rm Solution}.$$
 
-An example of such an integration algorithm is the forward Euler method (+@eq:euler-method), that can be implemented as:
+If we look a bit closely at the definitions of `Problem` and `Solution` we'll notice that a solver is indeed a functional that accepts functions of $(y,t)$ as an input and returns functions of $(y_0, t_0, t)$ as an output.
+
+An example of such a solver is the forward Euler method (+@eq:euler-method), that can be implemented as:
 
 ``` {.python file=pintFoam/parareal/forward_euler.py}
 from .abstract import (Vector, Problem, Solution)
 
 def forward_euler(f: Problem) -> Solution:
+    """Forward-Euler solver."""
     def step(y: Vector, t_0: float, t_1: float) -> Vector:
         """Stepping function of Euler method."""
         return y + (t_1 - t_0) * f(y, t_0)
@@ -121,7 +154,8 @@ def iterate_solution(step: Solution, h: float) -> Solution:
     return iter_step
 ```
 
-## Example: damped harmonic oscillator
+#### Example: damped harmonic oscillator
+We give a bit more attention to the example of the harmonic oscillator, because it will also serve as a first test case for the Parareal algorithm later on.
 
 The harmonic oscillator can model the movement of a pendulum or the vibration of a mass on a string.
 
@@ -150,8 +184,7 @@ def harmonic_oscillator(omega_0: float, zeta: float) -> Problem:
 <<harmonic-oscillator-solution>>
 ```
 
-### Exact solution
-
+#### Exact solution
 The damped harmonic oscillator has an exact solution, given the ansatz $y = A \exp(z t)$, we get
 
 $$z_{\pm} = \omega_0\left(-\zeta \pm \sqrt{\zeta^2 - 1}\right).$$
@@ -187,8 +220,7 @@ def underdamped_solution(omega_0: float, zeta: float) -> np.ndarray:
     return f
 ```
 
-### Numeric solution
-
+#### Numeric solution
 To plot a `Solution`, we need to tabulate the results for a given sequence of time points.
 
 ``` {.python file=pintFoam/parareal/tabulate_solution.py}
@@ -224,9 +256,7 @@ def tabulate_np(step: Solution, y_0: Array, t: Array) -> Array:
     return y
 ```
 
-### Plotting the harmonic oscillator
-
-``` {.python #plot-harmonic-oscillator}
+``` {.python file=build/plot-harmonic-oscillator.py .hide}
 import matplotlib.pylab as plt
 import numpy as np
 
@@ -245,14 +275,21 @@ y_euler = tabulate(forward_euler(f), np.r_[1.0, 0.0], t)
 y_exact = underdamped_solution(omega_0, zeta)(t)
 
 plt.plot(t, y_euler[:,0], color='slateblue', label="euler")
-plt.plot(t, y_exact[:,0], color='k', label="exact")
+plt.plot(t, y_exact[:,0], color='orangered', label="exact")
 plt.plot(t, y_euler[:,1], color='slateblue', linestyle=':')
-plt.plot(t, y_exact[:,1], color='k', linestyle=':')
+plt.plot(t, y_exact[:,1], color='orangered', linestyle=':')
 plt.legend()
-plt.savefig("harmonic.svg")
+plt.savefig("docs/img/harmonic.svg")
 ```
 
-![Damped harmonic oscillator](./img/harmonic.svg)
+We can compare the results from the numeric integration with the exact solution.
+
+``` {.make .figure target=img/harmonic.svg}
+Damped harmonic oscillator
+---
+$(target): build/plot-harmonic-oscillator.py
+> python $<
+```
 
 ## Parareal
 
@@ -390,7 +427,7 @@ We can draw the resulting workflow:
 gather(*y_euler).visualize("seq-graph.svg", rankdir="LR", data_attributes=attrs)
 ```
 
-![Sequential integration](./img/seq-graph.svg)
+![Sequential integration](./img/seq-graph.svg){style="width:100%"}
 
 This workflow is entirely sequential, every step depending on the preceding one. Now for Parareal! We also define the `coarse` integrator.
 
@@ -416,7 +453,7 @@ y_parareal = gather(*parareal(coarse, fine)(y_first, t))
 y_parareal.visualize("parareal-graph.pdf", rankdir="LR", data_attributes=attrs)
 ```
 
-![Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel.](./img/parareal-graph.svg)
+![Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel.](./img/parareal-graph.svg){style="width:100%"}
 
 ### Create example file
 
