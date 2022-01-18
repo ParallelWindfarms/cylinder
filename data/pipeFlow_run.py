@@ -11,11 +11,15 @@ from pintFoam import (BaseCase, foam, block_mesh)
 from pintFoam.vector import (Vector)
 from pintFoam.foam import (map_fields)
 
-fields = ["p", "U", "phi"]
+fields = ["p", "U"]
 case_name = "pipeFlow"
 
 fine_case = BaseCase(Path(case_name + "Fine"), "baseCase", fields=fields)
 coarse_case = BaseCase(Path(case_name + "Coarse"), "baseCase", fields=fields)
+
+fine_case.clean()
+coarse_case.clean()
+
 block_mesh(fine_case)
 block_mesh(coarse_case)
 
@@ -46,16 +50,16 @@ def f2c(x):
 def fine(n, x, t_0, t_1):
     """Fine integrator."""
     uid = uuid.uuid4()
-    return foam("pimpleFoam", 0.1, x, t_0, t_1,
-                job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-fine-{uid.hex}")
+    return foam("pimpleFoam", 0.001, x, t_0, t_1,
+                job_name=f"{n}-{int(t_0*1000):04}-{int(t_1*1000):04}-fine-{uid.hex}")
 
 
 @delayed
 def coarse(n, x, t_0, t_1):
     """Coarse integrator."""
     uid = uuid.uuid4()
-    return foam("pimpleFoam", 1.0, x, t_0, t_1,
-                job_name=f"{n}-{int(t_0):03}-{int(t_1):03}-coarse-{uid.hex}")
+    return foam("pimpleFoam", 0.1, x, t_0, t_1,
+                job_name=f"{n}-{int(t_0*1000):04}-{int(t_1*1000):04}-coarse-{uid.hex}")
 
 
 def time_windows(times, window_size):
