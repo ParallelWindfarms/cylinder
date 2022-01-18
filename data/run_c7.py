@@ -15,9 +15,6 @@ fields = ["p", "U", "pMean", "pPrime2Mean", "U_0", "UMean", "UPrime2Mean"]
 
 fine_case = BaseCase(Path("c7_fine"), "baseCase", fields=fields)
 coarse_case = BaseCase(Path("c7_coarse"), "baseCase", fields=fields)
-block_mesh(fine_case)
-block_mesh(coarse_case)
-
 times = np.linspace(0, 500, 51)
 
 @delayed
@@ -89,10 +86,18 @@ def windowed(times, init, window_size):
     return result
 
 
-# print(time_windows(np.arange(40), 11))
-windows = time_windows(times, 10)
-init = fine_case.new_vector()
-wf = solve(init, windows[0], 3)
-# wf.visualize("parareal.png")
-wf.compute(n_workers=4)
+def main():
+    block_mesh(fine_case)
+    block_mesh(coarse_case)
+
+    # print(time_windows(np.arange(40), 11))
+    windows = time_windows(times, 10)
+    init = fine_case.new_vector()
+    wf = solve(init, windows[0], 3)
+    # wf.visualize("parareal.png")
+    wf.compute(n_workers=4)
+
+
+if __name__ == "__main__":
+    main()
 

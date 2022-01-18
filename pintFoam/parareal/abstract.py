@@ -1,6 +1,6 @@
 # ~\~ language=Python filename=pintFoam/parareal/abstract.py
 # ~\~ begin <<lit/parareal.md|pintFoam/parareal/abstract.py>>[0]
-from __future__ import annotations  # enable self-reference in type annotations
+from __future__ import annotations
 from typing import (Callable, Protocol, TypeVar)
 
 # ~\~ begin <<lit/parareal.md|abstract-types>>[0]
@@ -21,10 +21,12 @@ class Vector(Protocol):
 
 # ~\~ end
 # ~\~ begin <<lit/parareal.md|abstract-types>>[1]
-Problem = Callable[[TVector, float], TVector]
+Mapping = Callable[[TVector], TVector]
 # ~\~ end
 # ~\~ begin <<lit/parareal.md|abstract-types>>[2]
+Problem = Callable[[TVector, float], TVector]
+# ~\~ end
+# ~\~ begin <<lit/parareal.md|abstract-types>>[3]
 Solution = Callable[[TVector, float, float], TVector]
 # ~\~ end
-Mapping = Callable[[TVector], TVector]
 # ~\~ end

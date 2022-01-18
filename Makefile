@@ -3,14 +3,16 @@
 theme := escience
 theme_dir := .entangled/templates/$(theme)
 
-pandoc_args += -s -t html5 -f commonmark_x --toc --toc-depth 2
+pandoc_args += -s -t html5 -f markdown+multiline_tables+simple_tables --toc --toc-depth 2
 pandoc_args += --template $(theme_dir)/template.html
 pandoc_args += --css theme.css
+pandoc_args += --filter pandoc-eqnos --filter pandoc-fignos
 pandoc_args += --mathjax
 pandoc_args += --section-divs
 pandoc_args += --lua-filter .entangled/scripts/hide.lua
 pandoc_args += --lua-filter .entangled/scripts/annotate.lua
 pandoc_args += --lua-filter .entangled/scripts/make.lua
+pandoc_args += --citeproc
 pandoc_input := README.md $(wildcard lit/*.md)
 pandoc_output := docs/index.html
 
@@ -42,7 +44,7 @@ watch:
 
 watch-pandoc:
 	@while true; do \
-		inotifywait -e close_write -r .entangled Makefile README.md; \
+		inotifywait -e close_write -r .entangled Makefile README.md lit; \
 		make site; \
 	done
 

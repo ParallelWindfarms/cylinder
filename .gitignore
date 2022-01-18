@@ -3,7 +3,6 @@
 vortex_shedding
 __pycache__
 pintFoam.egg-info
-.entangled
 .*.swp
 .mypy_cache
 .coverage
