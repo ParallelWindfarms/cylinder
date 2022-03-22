@@ -174,6 +174,8 @@ The `Problem` is then given as
 
 ``` {.python file=pintFoam/parareal/harmonic_oscillator.py}
 from .abstract import (Problem)
+from typing import Callable
+from numpy.typing import NDArray
 import numpy as np
 
 def harmonic_oscillator(omega_0: float, zeta: float) -> Problem:
@@ -207,7 +209,8 @@ $$y = A\quad \underbrace{\exp(-\omega_0\zeta t)}_{\rm dampening}\quad\underbrace
 Given an initial condition $q_0 = 1, p_0 = 0$, the solution is computed as
 
 ``` {.python #harmonic-oscillator-solution}
-def underdamped_solution(omega_0: float, zeta: float) -> np.ndarray:
+def underdamped_solution(omega_0: float, zeta: float) \
+        -> Callable[[NDArray[np.float64]], NDArray[np.float64]]:
     amp   = 1 / np.sqrt(1 - zeta**2)
     phase = np.arcsin(zeta)
     freq  = omega_0 * np.sqrt(1 - zeta**2)

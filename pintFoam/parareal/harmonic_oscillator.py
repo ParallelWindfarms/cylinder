@@ -1,6 +1,8 @@
 # ~\~ language=Python filename=pintFoam/parareal/harmonic_oscillator.py
 # ~\~ begin <<lit/parareal.md|pintFoam/parareal/harmonic_oscillator.py>>[0]
 from .abstract import (Problem)
+from typing import Callable
+from numpy.typing import NDArray
 import numpy as np
 
 def harmonic_oscillator(omega_0: float, zeta: float) -> Problem:
@@ -9,7 +11,8 @@ def harmonic_oscillator(omega_0: float, zeta: float) -> Problem:
     return f
 
 # ~\~ begin <<lit/parareal.md|harmonic-oscillator-solution>>[0]
-def underdamped_solution(omega_0: float, zeta: float) -> np.ndarray:
+def underdamped_solution(omega_0: float, zeta: float) \
+        -> Callable[[NDArray[np.float64]], NDArray[np.float64]]:
     amp   = 1 / np.sqrt(1 - zeta**2)
     phase = np.arcsin(zeta)
     freq  = omega_0 * np.sqrt(1 - zeta**2)
