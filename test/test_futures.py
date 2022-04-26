@@ -9,21 +9,23 @@ from pintFoam.parareal.futures import Parareal
 from pintFoam.parareal.harmonic_oscillator import harmonic_oscillator
 from pintFoam.parareal.forward_euler import forward_euler
 from pintFoam.parareal.iterate_solution import iterate_solution
+from pintFoam.parareal.tabulate_solution import tabulate
 
 from dask.distributed import Client  # type: ignore
 
 
 OMEGA0 = 1.0
 ZETA = 0.5
-H = 0.01
+H = 0.001
+system = harmonic_oscillator(OMEGA0, ZETA)
 
 
 def coarse(y, t0, t1):
-    return forward_euler(harmonic_oscillator(OMEGA0, ZETA))(y, t0, t1)
+    return forward_euler(system)(y, t0, t1)
 
 
 def fine(y, t0, t1):
-    return iterate_solution(coarse, H)(y, t0, t1)
+    return iterate_solution(forward_euler(system), H)(y, t0, t1)
 
 
 @dataclass
@@ -41,14 +43,16 @@ class History:
 def test_parareal():
     client = Client()
     p = Parareal(client, coarse, fine)
-    t = np.linspace(0.0, 15.0, 8)
-    y0 = np.array([1.0, 0.0])
+    t = np.linspace(0.0, 15.0, 30)
+    y0 = np.array([0.0, 1.0])
     history = History()
     jobs = p.schedule(y0, t)
     p.wait(jobs, history.convergence_test)
 
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_parareal()
+    y0 = np.array([1.0, 0.0])
+    t = np.linspace(0.0, 15.0, 30)
+    result = tabulate(fine, y0, t)
+    print(result)
 # ~\~ end
