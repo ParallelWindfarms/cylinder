@@ -163,7 +163,7 @@ def all_times(self):
             for t in get_times(self.path)]
 ```
 
-We do arithmetic on `Vector` by cloning an existing `Vector` and then modify the `internalField` values inside. This can be done very efficiently using memory-mapped array access. The `mmap_data` member takes care of loading the data and closing the file when we're done with it in a nifty context manager.
+ We do arithmetic on `Vector` by cloning an existing `Vector` and then modify the `internalField` values inside. This can be done very efficiently using memory-mapped array access. The `mmap_data` member takes care of loading the data and closing the file when we're done with it in a nifty context manager.
 
 ``` {.python #pintfoam-vector-properties}
 @contextmanager
