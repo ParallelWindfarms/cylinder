@@ -38,3 +38,7 @@ def pushd(path: Union[str, Path]):
         os.chdir(prev)
 # ~\~ end
 # ~\~ end
+
+def generate_job_name(n, t_0, t_1, uid, id):
+    """ Auxiliary function to generate a job name."""
+    return f"{n}-{int(t_0*1000):04}-{int(t_1*1000):04}-{id}-{uid.hex}"
