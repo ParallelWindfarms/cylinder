@@ -3,6 +3,7 @@ We reimplement Parareal in the `futures` framework of Dask. We have a few helper
 
 ``` {.python file=pintFoam/parareal/futures.py #parareal-futures}
 from .abstract import (Solution, Mapping, Vector)
+from typing import (Callable)
 from dataclasses import dataclass
 from math import ceil
 import numpy as np
@@ -47,8 +48,8 @@ Every call that actually requires some of the data needs to be sent to the remot
 @dataclass
 class Parareal:
     client: Client
-    coarse: Solution
-    fine: Solution
+    coarse: Callable[[int], Solution]
+    fine: Callable[[int], Solution]
     c2f: Mapping = identity
     f2c: Mapping = identity
 
@@ -62,13 +63,13 @@ class Parareal:
             return x
         return self.client.submit(self.f2c, x)
 
-    def _coarse(self, y: Future, t0: float, t1: float) ->  Future:
+    def _coarse(self, n_iter: int, y: Future, t0: float, t1: float) ->  Future:
         logging.debug("Coarse run: %s, %s, %s", y, t0, t1)
-        return self.client.submit(self.coarse, y, t0, t1)
+        return self.client.submit(self.coarse(n_iter), y, t0, t1)
 
-    def _fine(self, y: Future, t0: float, t1: float) -> Future:
+    def _fine(self, n_iter: int, y: Future, t0: float, t1: float) -> Future:
         logging.debug("Fine run: %s, %s, %s", y, t0, t1)
-        return self.client.submit(self.fine, y, t0, t1)
+        return self.client.submit(self.fine(n_iter), y, t0, t1)
 
     <<parareal-methods>>
 ```
@@ -76,15 +77,15 @@ class Parareal:
 The `step` method implements the core parareal algorithm.
 
 ``` {.python #parareal-methods}
-def step(self, y_prev: list[Future], t: NDArray[np.float64]) -> list[Future]:
+def step(self, n_iter: int, y_prev: list[Future], t: NDArray[np.float64]) -> list[Future]:
     m = t.size
     y_next = [None] * m
     y_next[0] = y_prev[0]
 
     for i in range(1, m):
-        c1 = self._c2f(self._coarse(self.f2c(y_next[i-1]), t[i-1], t[i]))
-        f1 = self._fine(y_prev[i-1], t[i-1], t[i])
-        c2 = self._c2f(self._coarse(self.f2c(y_prev[i-1]), t[i-1], t[i]))
+        c1 = self._c2f(self._coarse(n_iter, self.f2c(y_next[i-1]), t[i-1], t[i]))
+        f1 = self._fine(n_iter, y_prev[i-1], t[i-1], t[i])
+        c2 = self._c2f(self._coarse(n_iter, self.f2c(y_prev[i-1]), t[i-1], t[i]))
         y_next[i] = self.client.submit(combine, c1, f1, c2)
 
     return y_next
@@ -97,12 +98,12 @@ def schedule(self, y_0: Vector, t: NDArray[np.float64]) -> list[list[Future]]:
     # schedule initial coarse integration
     y_init = [self.client.scatter(y_0)]
     for (a, b) in pairs(t):
-        y_init.append(self._coarse(y_init[-1], a, b))
+        y_init.append(self._coarse(0, y_init[-1], a, b))
 
     # schedule all iterations of parareal
     jobs = [y_init]
-    for _ in range(len(t)):
-        jobs.append(self.step(jobs[-1], t))
+    for n_iter in range(len(t)):
+        jobs.append(self.step(n_iter+1, jobs[-1], t))
 
     return jobs
 ```
@@ -125,6 +126,7 @@ We may test this on the harmonic oscillator.
 
 ``` {.python file=test/test_futures.py}
 from dataclasses import dataclass, field
+from functools import partial
 import logging
 from numpy.typing import NDArray
 import numpy as np
@@ -144,11 +146,11 @@ H = 0.001
 system = harmonic_oscillator(OMEGA0, ZETA)
 
 
-def coarse(y, t0, t1):
+def coarse(_, y, t0, t1):
     return forward_euler(system)(y, t0, t1)
 
 
-def fine(y, t0, t1):
+def fine(_, y, t0, t1):
     return iterate_solution(forward_euler(system), H)(y, t0, t1)
 
 
@@ -166,7 +168,7 @@ class History:
 
 def test_parareal():
     client = Client()
-    p = Parareal(client, coarse, fine)
+    p = Parareal(client, lambda n: partial(coarse, n), lambda n: partial(fine, n))
     t = np.linspace(0.0, 15.0, 30)
     y0 = np.array([0.0, 1.0])
     history = History()

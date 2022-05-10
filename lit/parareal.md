@@ -35,7 +35,7 @@ We need to define the following:
 
 ``` {.python file=pintFoam/parareal/abstract.py}
 from __future__ import annotations
-from typing import (Callable, Protocol, TypeVar)
+from typing import (Callable, Protocol, TypeVar, Union)
 
 <<abstract-types>>
 ```
@@ -93,7 +93,8 @@ $${\rm Problem} : (y, t) \to f(y, t) = y'$$
 If we have a `Problem`, we're after a `Solution`: a function that, given an initial `Vector` (the initial condition $y_0$), initial time ($t_0$) and final time ($t$), gives the resulting `Vector` (the solution, $y(t)$ for the given initial conditions).
 
 ``` {.python #abstract-types}
-Solution = Callable[[TVector, float, float], TVector]
+Solution = Union[Callable[[TVector, float, float], TVector],
+                 Callable[..., TVector]]
 ```
 
 Those readers more familiar with classical physics or mathematics may notice that our `Problem` object corresponds with the function $f$ in (+@eq:ode). The `Solution` object, on the other hand, corresponds with the evolution operator $\phi$ in equation @eq:solution.
