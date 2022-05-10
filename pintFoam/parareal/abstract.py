@@ -1,7 +1,7 @@
 # ~\~ language=Python filename=pintFoam/parareal/abstract.py
 # ~\~ begin <<lit/parareal.md|pintFoam/parareal/abstract.py>>[0]
 from __future__ import annotations
-from typing import (Callable, Protocol, TypeVar)
+from typing import (Callable, Protocol, TypeVar, Union)
 
 # ~\~ begin <<lit/parareal.md|abstract-types>>[0]
 TVector = TypeVar("TVector", bound="Vector")
@@ -27,6 +27,7 @@ Mapping = Callable[[TVector], TVector]
 Problem = Callable[[TVector, float], TVector]
 # ~\~ end
 # ~\~ begin <<lit/parareal.md|abstract-types>>[3]
-Solution = Callable[[TVector, float, float], TVector]
+Solution = Union[Callable[[TVector, float, float], TVector],
+                 Callable[..., TVector]]
 # ~\~ end
 # ~\~ end
