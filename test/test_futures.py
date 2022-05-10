@@ -1,6 +1,7 @@
 # ~\~ language=Python filename=test/test_futures.py
 # ~\~ begin <<lit/parafutures.md|test/test_futures.py>>[0]
 from dataclasses import dataclass, field
+from functools import partial
 import logging
 from numpy.typing import NDArray
 import numpy as np
@@ -20,11 +21,11 @@ H = 0.001
 system = harmonic_oscillator(OMEGA0, ZETA)
 
 
-def coarse(y, t0, t1):
+def coarse(_, y, t0, t1):
     return forward_euler(system)(y, t0, t1)
 
 
-def fine(y, t0, t1):
+def fine(_, y, t0, t1):
     return iterate_solution(forward_euler(system), H)(y, t0, t1)
 
 
@@ -42,7 +43,7 @@ class History:
 
 def test_parareal():
     client = Client()
-    p = Parareal(client, coarse, fine)
+    p = Parareal(client, lambda n: partial(coarse, n), lambda n: partial(fine, n))
     t = np.linspace(0.0, 15.0, 30)
     y0 = np.array([0.0, 1.0])
     history = History()

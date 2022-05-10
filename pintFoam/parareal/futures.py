@@ -1,6 +1,7 @@
 # ~\~ language=Python filename=pintFoam/parareal/futures.py
 # ~\~ begin <<lit/parafutures.md|parareal-futures>>[0]
 from .abstract import (Solution, Mapping, Vector)
+from typing import (Callable)
 from dataclasses import dataclass
 from math import ceil
 import numpy as np
@@ -23,8 +24,8 @@ def combine(c1: Vector, f1: Vector, c2: Vector) -> Vector:
 @dataclass
 class Parareal:
     client: Client
-    coarse: Solution
-    fine: Solution
+    coarse: Callable[[int], Solution]
+    fine: Callable[[int], Solution]
     c2f: Mapping = identity
     f2c: Mapping = identity
 
@@ -38,24 +39,24 @@ class Parareal:
             return x
         return self.client.submit(self.f2c, x)
 
-    def _coarse(self, y: Future, t0: float, t1: float) ->  Future:
+    def _coarse(self, n_iter: int, y: Future, t0: float, t1: float) ->  Future:
         logging.debug("Coarse run: %s, %s, %s", y, t0, t1)
-        return self.client.submit(self.coarse, y, t0, t1)
+        return self.client.submit(self.coarse(n_iter), y, t0, t1)
 
-    def _fine(self, y: Future, t0: float, t1: float) -> Future:
+    def _fine(self, n_iter: int, y: Future, t0: float, t1: float) -> Future:
         logging.debug("Fine run: %s, %s, %s", y, t0, t1)
-        return self.client.submit(self.fine, y, t0, t1)
+        return self.client.submit(self.fine(n_iter), y, t0, t1)
 
     # ~\~ begin <<lit/parafutures.md|parareal-methods>>[0]
-    def step(self, y_prev: list[Future], t: NDArray[np.float64]) -> list[Future]:
+    def step(self, n_iter: int, y_prev: list[Future], t: NDArray[np.float64]) -> list[Future]:
         m = t.size
         y_next = [None] * m
         y_next[0] = y_prev[0]
 
         for i in range(1, m):
-            c1 = self._c2f(self._coarse(self.f2c(y_next[i-1]), t[i-1], t[i]))
-            f1 = self._fine(y_prev[i-1], t[i-1], t[i])
-            c2 = self._c2f(self._coarse(self.f2c(y_prev[i-1]), t[i-1], t[i]))
+            c1 = self._c2f(self._coarse(n_iter, self.f2c(y_next[i-1]), t[i-1], t[i]))
+            f1 = self._fine(n_iter, y_prev[i-1], t[i-1], t[i])
+            c2 = self._c2f(self._coarse(n_iter, self.f2c(y_prev[i-1]), t[i-1], t[i]))
             y_next[i] = self.client.submit(combine, c1, f1, c2)
 
         return y_next
@@ -65,12 +66,12 @@ class Parareal:
         # schedule initial coarse integration
         y_init = [self.client.scatter(y_0)]
         for (a, b) in pairs(t):
-            y_init.append(self._coarse(y_init[-1], a, b))
+            y_init.append(self._coarse(0, y_init[-1], a, b))
 
         # schedule all iterations of parareal
         jobs = [y_init]
-        for _ in range(len(t)):
-            jobs.append(self.step(jobs[-1], t))
+        for n_iter in range(len(t)):
+            jobs.append(self.step(n_iter+1, jobs[-1], t))
 
         return jobs
     # ~\~ end
