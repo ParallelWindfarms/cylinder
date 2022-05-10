@@ -6,6 +6,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from typing import Union
 import functools
+from numpy import (floor, log10)
 
 
 def decorator(f):
@@ -39,6 +40,13 @@ def pushd(path: Union[str, Path]):
 # ~\~ end
 # ~\~ end
 
-def generate_job_name(n, t_0, t_1, uid, id):
+def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
     """ Auxiliary function to generate a job name."""
-    return f"{n}-{int(t_0*1000):04}-{int(t_1*1000):04}-{id}-{uid.hex}"
+
+    def integrify(t, length=tlength):
+        """ Auxiliary function for converting a float into an integer. """
+        aux = t * 10 ** -floor(log10(t)) # Remove trailing zeros
+        aux = aux * 10 ** (length - 1) # Displace the decimal point to the right
+        return int(aux)
+    
+    return f"{n}-{integrify(t_0)}-{integrify(t_1)}-{id}-{uid.hex}"
