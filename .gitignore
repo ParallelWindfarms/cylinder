@@ -10,3 +10,4 @@ notebooks
 dist
 dask-worker-space
 poetry.lock
+.vscode
