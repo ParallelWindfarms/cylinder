@@ -45,8 +45,17 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
 
     def integrify(t, length=tlength):
         """ Auxiliary function for converting a float into an integer. """
-        aux = t * 10 ** -floor(log10(t)) # Remove trailing zeros
-        aux = aux * 10 ** (length - 1) # Displace the decimal point to the right
+        if t==0:
+            return 0
+        else:
+            aux = t * 10 ** -floor(log10(t)) # Remove trailing zeros
+            aux = aux * 10 ** (length - 1) # Displace the decimal point to the right
         return int(aux)
+
+    def stringify(t, length=tlength):
+        if integrify(t) == 0:
+            return "0" * length
+        else:
+            return str(integrify(t))
     
-    return f"{n}-{integrify(t_0)}-{integrify(t_1)}-{id}-{uid.hex}"
+    return f"{n}-{stringify(t_0)}-{stringify(t_1)}-{id}-{uid.hex}"
