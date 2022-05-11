@@ -1,5 +1,4 @@
 from pathlib import Path
-from collections.abc import Sequence
 import numpy as np
 from numpy.typing import NDArray
 import logging
@@ -8,9 +7,7 @@ import uuid
 from dataclasses import dataclass, field
 from dask.distributed import Client  # type: ignore
 from functools import partial
-from pintFoam.parareal import (parareal, tabulate)
 from pintFoam import (BaseCase, foam, block_mesh)
-from pintFoam.vector import (Vector)
 from pintFoam.parareal.futures import (Parareal)
 from pintFoam.foam import (map_fields)
 from pintFoam.utils import (generate_job_name)
@@ -69,14 +66,17 @@ class History:
         return np.allclose(self.history[-1], self.history[-2], atol=1e-4)
 
 
-client = Client()
-p = Parareal(client, 
-             lambda n: partial(coarse, n), 
-             lambda n: partial(fine, n), 
-             c2f,
-             f2c)
-t = np.linspace(0.0, 15.0, 30)
-y0 = fine_case.new_vector()
-history = History()
-jobs = p.schedule(y0, t)
-p.wait(jobs, history.convergence_test)
+## Run it!
+if __name__ == "__main__":
+    client = Client()
+
+    p = Parareal(client, 
+                lambda n: partial(coarse, n), 
+                lambda n: partial(fine, n), 
+                c2f,
+                f2c)
+    t = np.linspace(0.0, 15.0, 30)
+    y0 = fine_case.new_vector()
+    history = History()
+    jobs = p.schedule(y0, t)
+    p.wait(jobs, history.convergence_test)
