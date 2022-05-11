@@ -68,17 +68,15 @@ class History:
             return False
         return np.allclose(self.history[-1], self.history[-2], atol=1e-4)
 
-def test_parareal():
-    client = Client()
-    p = Parareal(client, 
-                 lambda n: partial(coarse, n), 
-                 lambda n: partial(fine, n), 
-                 c2f,
-                 f2c)
-    t = np.linspace(0.0, 15.0, 30)
-    y0 = fine_case.new_vector()
-    history = History()
-    jobs = p.schedule(y0, t)
-    p.wait(jobs, history.convergence_test)
 
-test_parareal()
+client = Client()
+p = Parareal(client, 
+             lambda n: partial(coarse, n), 
+             lambda n: partial(fine, n), 
+             c2f,
+             f2c)
+t = np.linspace(0.0, 15.0, 30)
+y0 = fine_case.new_vector()
+history = History()
+jobs = p.schedule(y0, t)
+p.wait(jobs, history.convergence_test)
