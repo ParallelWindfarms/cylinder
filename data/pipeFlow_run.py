@@ -10,6 +10,7 @@ from pintFoam.parareal import (parareal, tabulate)
 from pintFoam import (BaseCase, foam, block_mesh)
 from pintFoam.vector import (Vector)
 from pintFoam.foam import (map_fields)
+from pintFoam.utils import (generate_job_name)
 
 fields = ["p", "U"]
 case_name = "pipeFlow"
@@ -45,13 +46,12 @@ def f2c(x):
     Interpolate the underlying field x from the fine to the coarse grid"""
     return map_fields(x, coarse_case, map_method="interpolate")
 
-
 @delayed
 def fine(n, x, t_0, t_1):
     """Fine integrator."""
     uid = uuid.uuid4()
     return foam("pimpleFoam", 0.001, x, t_0, t_1,
-                job_name=f"{n}-{int(t_0*1000):04}-{int(t_1*1000):04}-fine-{uid.hex}")
+                job_name=generate_job_name(n, t_0, t_1, uid, "fine"))
 
 
 @delayed
@@ -59,7 +59,7 @@ def coarse(n, x, t_0, t_1):
     """Coarse integrator."""
     uid = uuid.uuid4()
     return foam("pimpleFoam", 0.1, x, t_0, t_1,
-                job_name=f"{n}-{int(t_0*1000):04}-{int(t_1*1000):04}-coarse-{uid.hex}")
+                job_name=generate_job_name(n, t_0, t_1, uid, "coarse"))
 
 
 def time_windows(times, window_size):
