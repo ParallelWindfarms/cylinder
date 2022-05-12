@@ -43,19 +43,31 @@ def pushd(path: Union[str, Path]):
 def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
     """ Auxiliary function to generate a job name."""
 
-    def integrify(t, length=tlength):
-        """ Auxiliary function for converting a float into an integer. """
-        if t==0:
+    if any([t_0 < 0, t_1 < 0]):
+        raise ValueError("Times must be positive.")
+
+    def trim_zeros(t):
+        """Trim zeros 
+        
+        for instance:
+
+        trim_zeros(0.0012345)
+        1.2345
+        """
+        if t == 0:
             return 0
         else:
-            aux = t * 10 ** -floor(log10(t)) # Remove trailing zeros
-            aux = aux * 10 ** (length - 1) # Displace the decimal point to the right
-        return int(aux)
+            return t * 10 ** -floor(log10(t))
 
     def stringify(t, length=tlength):
-        if integrify(t) == 0:
-            return "0" * length
-        else:
-            return str(integrify(t))
+        """ Turn a float into a string with a given length 
+
+        for instance:
+
+        stringify(0.0012345, length=2)
+        '12'
+        """
+        format_string = "." + str(length-1) + "f" # For instance: .5f
+        return f"{trim_zeros(t):{format_string}}".replace(".", "")
     
     return f"{n}-{stringify(t_0)}-{stringify(t_1)}-{id}-{uid.hex}"
