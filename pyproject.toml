@@ -13,7 +13,7 @@ readme = "README.md"
 python = ">=3.9,<3.11"
 PyFoam = "^2021.6"
 byteparsing = "^0.1.2"
-numpy = "=1.22.3"
+numpy = "^1.22"
 argh = "^0.26.2"
 dask = {extras = ["complete"], version = "^2021.11.1"}
 entangled-filters = "^0.8.3"

@@ -30,6 +30,8 @@ from __future__ import annotations
 
 import operator
 import mmap
+import weakref
+import gc
 
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -174,10 +176,14 @@ def mmap_data(self, field):
     with mmap.mmap(f.fileno(), 0) as mm:
         content = parse_bytes(foam_file, mm)
         try:
-            yield content["data"]["internalField"]
+            result = content["data"]["internalField"]
         except KeyError as e:
             print(content)
             raise e
+        yield weakref.ref(result)
+        del result
+        del content
+        gc.collect()
 ```
 
 We clone a vector by creating a new vector and copying the internal fields.
@@ -205,7 +211,7 @@ def zip_with(self, other: Vector, op) -> Vector:
 
     for f in self.fields:
         with x.mmap_data(f) as a, other.mmap_data(f) as b:
-            a[:] = op(a, b)
+            a()[:] = op(a(), b())
     return x
 
 def map(self, f) -> Vector:
@@ -213,7 +219,7 @@ def map(self, f) -> Vector:
 
     for f in self.fields:
         with x.mmap_data(f) as a:
-            a[:] = f(a)
+            a()[:] = f(a())
     return x
 ```
 
