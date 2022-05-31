@@ -6,7 +6,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from typing import Union
 import functools
-from numpy import (floor, log10)
+from math import (floor, log10)
 
 
 def decorator(f):
@@ -38,8 +38,7 @@ def pushd(path: Union[str, Path]):
     finally:
         os.chdir(prev)
 # ~\~ end
-# ~\~ end
-
+# ~\~ begin <<lit/cylinder.md|job-names>>[0]
 def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
     """ Auxiliary function to generate a job name."""
 
@@ -48,7 +47,7 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
 
     def trim_zeros(t):
         """Trim zeros 
-        
+
         for instance:
 
         trim_zeros(0.0012345)
@@ -69,5 +68,7 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
         """
         format_string = "." + str(length-1) + "f" # For instance: .5f
         return f"{trim_zeros(t):{format_string}}".replace(".", "")
-    
+
     return f"{n}-{stringify(t_0)}-{stringify(t_1)}-{id}-{uid.hex}"
+# ~\~ end
+# ~\~ end

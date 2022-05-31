@@ -54,7 +54,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     y0 = np.array([1.0, 0.0])
     t = np.linspace(0.0, 15.0, 30)
-    fine_solution = partial(fine, None) # A function of only (x, t_0, t_1) is expected
-    result = tabulate(fine_solution, y0, t)
+    result = tabulate(fine, y0, t)
     print(result)
 # ~\~ end
