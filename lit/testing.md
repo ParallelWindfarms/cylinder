@@ -39,14 +39,14 @@ def test_basic_pitzDaily(tmp_path):
         with end_vec.mmap_data(f) as a, \
              init_vec.mmap_data(f) as b, \
              diff_vec.mmap_data(f) as c:
-            assert np.abs(a - b - c).mean() < 1e-6
+            assert np.abs(a() - b() - c()).mean() < 1e-6
 
     # assert diff_vec.time == "0.1"
     orig_vec = init_vec + diff_vec
     should_be_zero = end_vec - orig_vec
     for f in pitzDaily_fields:
         with should_be_zero.mmap_data(f) as v:
-            assert np.all(np.abs(v) < 1e-6)
+            assert np.all(np.abs(v()) < 1e-6)
 
 
 def test_restart(tmp_path):
@@ -66,6 +66,6 @@ def test_restart(tmp_path):
     diff = end_vec - check
     for f in pitzDaily_fields:
         with diff.mmap_data(f) as v:
-            assert np.all(np.abs(v) < 1e-6)
+            assert np.all(np.abs(v()) < 1e-6)
 ```
 
