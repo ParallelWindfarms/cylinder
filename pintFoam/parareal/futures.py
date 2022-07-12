@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=pintFoam/parareal/futures.py
-# ~\~ begin <<lit/parafutures.md|parareal-futures>>[0]
+# ~\~ begin <<lit/parafutures.md|parareal-futures>>[init]
 from .abstract import (Solution, Mapping, Vector)
 from typing import (Callable)
 from dataclasses import dataclass
@@ -47,7 +47,7 @@ class Parareal:
         logging.debug("Fine run: %s, %s, %s", y, t0, t1)
         return self.client.submit(self.fine(n_iter), y, t0, t1)
 
-    # ~\~ begin <<lit/parafutures.md|parareal-methods>>[0]
+    # ~\~ begin <<lit/parafutures.md|parareal-methods>>[init]
     def step(self, n_iter: int, y_prev: list[Future], t: NDArray[np.float64]) -> list[Future]:
         m = t.size
         y_next = [None] * m

@@ -1,6 +1,6 @@
 .PHONY: site clean watch watch-pandoc watch-browser-sync
 
-theme := escience
+theme := default
 theme_dir := .entangled/templates/$(theme)
 
 pandoc_args += -s -t html5 -f markdown+multiline_tables+simple_tables --toc --toc-depth 2

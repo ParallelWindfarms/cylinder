@@ -1,9 +1,9 @@
 # ~\~ language=Python filename=pintFoam/parareal/abstract.py
-# ~\~ begin <<lit/parareal.md|pintFoam/parareal/abstract.py>>[0]
+# ~\~ begin <<lit/parareal.md|pintFoam/parareal/abstract.py>>[init]
 from __future__ import annotations
 from typing import (Callable, Protocol, TypeVar, Union)
 
-# ~\~ begin <<lit/parareal.md|abstract-types>>[0]
+# ~\~ begin <<lit/parareal.md|abstract-types>>[init]
 TVector = TypeVar("TVector", bound="Vector")
 
 class Vector(Protocol):

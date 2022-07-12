@@ -1,6 +1,6 @@
 # ~\~ language=Python filename=pintFoam/utils.py
-# ~\~ begin <<lit/cylinder.md|pintFoam/utils.py>>[0]
-# ~\~ begin <<lit/cylinder.md|push-dir>>[0]
+# ~\~ begin <<lit/cylinder.md|pintFoam/utils.py>>[init]
+# ~\~ begin <<lit/cylinder.md|push-dir>>[init]
 import os
 from pathlib import Path
 from contextlib import contextmanager
@@ -38,7 +38,7 @@ def pushd(path: Union[str, Path]):
     finally:
         os.chdir(prev)
 # ~\~ end
-# ~\~ begin <<lit/cylinder.md|job-names>>[0]
+# ~\~ begin <<lit/cylinder.md|job-names>>[init]
 def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
     """ Auxiliary function to generate a job name."""
 

@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=test/test_futures.py
-# ~\~ begin <<lit/parafutures.md|test/test_futures.py>>[0]
+# ~\~ begin <<lit/parafutures.md|test/test_futures.py>>[init]
 from dataclasses import dataclass, field
 from functools import partial
 import logging

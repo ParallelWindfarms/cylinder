@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=build/plot-harmonic-oscillator.py
-# ~\~ begin <<lit/parareal.md|build/plot-harmonic-oscillator.py>>[0]
+# ~\~ begin <<lit/parareal.md|build/plot-harmonic-oscillator.py>>[init]
 import matplotlib.pylab as plt
 import numpy as np
 

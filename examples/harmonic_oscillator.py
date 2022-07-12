@@ -1,9 +1,9 @@
 # ~\~ language=Python filename=examples/harmonic_oscillator.py
-# ~\~ begin <<lit/parareal.md|examples/harmonic_oscillator.py>>[0]
+# ~\~ begin <<lit/parareal.md|examples/harmonic_oscillator.py>>[init]
 
 
-# ~\~ begin <<lit/parareal.md|daskify>>[0]
-# ~\~ begin <<lit/parareal.md|import-dask>>[0]
+# ~\~ begin <<lit/parareal.md|daskify>>[init]
+# ~\~ begin <<lit/parareal.md|import-dask>>[init]
 from dask import delayed
 # ~\~ end
 import numpy as np

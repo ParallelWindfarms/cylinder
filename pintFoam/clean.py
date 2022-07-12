@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=pintFoam/clean.py
-# ~\~ begin <<lit/cylinder.md|pintFoam/clean.py>>[0]
+# ~\~ begin <<lit/cylinder.md|pintFoam/clean.py>>[init]
 import argh  # type:ignore
 from pathlib import Path
 from .vector import BaseCase

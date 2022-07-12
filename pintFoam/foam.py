@@ -1,12 +1,12 @@
 # ~\~ language=Python filename=pintFoam/foam.py
-# ~\~ begin <<lit/cylinder.md|pintFoam/foam.py>>[0]
+# ~\~ begin <<lit/cylinder.md|pintFoam/foam.py>>[init]
 import subprocess
 import math
 from typing import Optional, Union
 
 from .vector import (BaseCase, Vector, parameter_file, get_times)
 
-# ~\~ begin <<lit/cylinder.md|pintfoam-map-fields>>[0]
+# ~\~ begin <<lit/cylinder.md|pintfoam-map-fields>>[init]
 def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=None) -> Vector:
     """Wrapper for OpenFOAM's mapFields
 
@@ -25,7 +25,7 @@ def map_fields(source: Vector, target: BaseCase, consistent=True, map_method=Non
     (result.path / "0").rename(result.dirname)
     return result
 # ~\~ end
-# ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[0]
+# ~\~ begin <<lit/cylinder.md|pintfoam-set-fields>>[init]
 def set_fields(v, *, default_field_values, regions):
     """Wrapper for OpenFOAM's setFields."""
     x = parameter_file(v, "system/setFieldsDict")
@@ -34,15 +34,15 @@ def set_fields(v, *, default_field_values, regions):
     x.writeFile()
     subprocess.run("setFields", cwd=v.path, check=True)
 # ~\~ end
-# ~\~ begin <<lit/cylinder.md|pintfoam-block-mesh>>[0]
+# ~\~ begin <<lit/cylinder.md|pintfoam-block-mesh>>[init]
 def block_mesh(case: BaseCase):
     """Wrapper for OpenFOAM's blockMesh."""
     subprocess.run("blockMesh", cwd=case.path, check=True)
 # ~\~ end
-# ~\~ begin <<lit/cylinder.md|pintfoam-epsilon>>[0]
+# ~\~ begin <<lit/cylinder.md|pintfoam-epsilon>>[init]
 epsilon = 1e-6
 # ~\~ end
-# ~\~ begin <<lit/cylinder.md|pintfoam-solution>>[0]
+# ~\~ begin <<lit/cylinder.md|pintfoam-solution>>[init]
 def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
          write_interval: Optional[float] = None,
          job_name: Optional[str] = None,
@@ -61,11 +61,11 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
     Returns:
         The `Vector` representing the end state.
     """
-    # ~\~ begin <<lit/cylinder.md|pintfoam-solution-function>>[0]
+    # ~\~ begin <<lit/cylinder.md|pintfoam-solution-function>>[init]
     assert abs(float(x.time) - t_0) < epsilon, f"Times should match: {t_0} != {x.time}."
     y = x.clone(job_name)
     write_interval = write_interval or (t_1 - t_0)
-    # ~\~ begin <<lit/cylinder.md|set-control-dict>>[0]
+    # ~\~ begin <<lit/cylinder.md|set-control-dict>>[init]
     backup = open(y.path / "system" / "controlDict", "r").read()
     for i in range(5):   # this sometimes fails, so we try a few times, maybe disk sync issue?
         try:
@@ -86,12 +86,12 @@ def foam(solver: str, dt: float, x: Vector, t_0: float, t_1: float,
         raise exception
 
     # ~\~ end
-    # ~\~ begin <<lit/cylinder.md|run-solver>>[0]
+    # ~\~ begin <<lit/cylinder.md|run-solver>>[init]
     with open(y.path / "log.stdout", "w") as logfile, \
          open(y.path / "log.stderr", "w") as errfile:
         subprocess.run(solver, cwd=y.path, check=True, stdout=logfile, stderr=errfile)
     # ~\~ end
-    # ~\~ begin <<lit/cylinder.md|return-result>>[0]
+    # ~\~ begin <<lit/cylinder.md|return-result>>[init]
     t1_str = get_times(y.path)[-1]
     return Vector(y.base, y.case, t1_str)
     # ~\~ end
