@@ -1,16 +1,17 @@
 # ~\~ language=Python filename=examples/mpi_futures.py
 # ~\~ begin <<lit/mpi_oscillator.md|example-mpi>>[init]
 from __future__ import annotations
+import argh  # type: ignore
 import numpy as np
 # import numpy.typing as npt
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import (Union, Callable)
+from typing import (Union, Callable, Optional, Any, Iterator)
 from abc import (ABC, abstractmethod)
 # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-imports>>[init]
 from dask_mpi import initialize  # type: ignore
 from dask.distributed import Client  # type: ignore
-from mpi4py import MPI
+# from mpi4py import MPI
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-imports>>[1]
 import operator
@@ -28,14 +29,16 @@ from pintFoam.parareal.harmonic_oscillator import (underdamped_solution, harmoni
 import math
 # from uuid import uuid4
 import logging
-
-logging.basicConfig()
 # ~\~ end
+
+OMEGA0 = 1.0
+ZETA = 0.1
+H = 0.001
 
 # ~\~ begin <<lit/mpi_oscillator.md|vector-expressions>>[init]
 class Vector(ABC):
     @abstractmethod
-    def reduce(self: Vector, f: h5.File) -> np.ndarray:
+    def reduce(self: Vector) -> np.ndarray:
         pass
 
     def __add__(self, other):
@@ -51,23 +54,28 @@ class Vector(ABC):
         return UnaryExpr(partial(operator.mul, scale), self)
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|vector-expressions>>[1]
-def reduce_expr(expr: Union[np.ndarray, Vector], f: h5.File) -> np.ndarray:
-    if not isinstance(expr, np.ndarray):
-        return expr.reduce(f)
+def reduce_expr(expr: Union[np.ndarray, Vector]) -> np.ndarray:
+    if isinstance(expr, Vector):
+        return expr.reduce()
     else:
         return expr
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|vector-expressions>>[2]
 @dataclass
 class H5Snap(Vector):
+    path: Path
     loc: str
     slice: list[Union[None, int, slice]]
 
-    def data(self, f):
-        return f[self.loc].__getitem__(tuple(self.slice))
+    def data(self):
+        with h5.File(self.path, "r") as f:
+            return f[self.loc].__getitem__(tuple(self.slice))
 
-    def reduce(self, f):
-        return self.data(f)
+    def reduce(self):
+        x = self.data()
+        logger = logging.getLogger()
+        logger.debug(f"read {x} from {self.path}")
+        return self.data()
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|vector-expressions>>[3]
 class Index:
@@ -85,8 +93,8 @@ class UnaryExpr(Vector):
     func: Callable[[np.ndarray], np.ndarray]
     inp: Vector
 
-    def reduce(self, f):
-        a = reduce_expr(self.inp, f)
+    def reduce(self):
+        a = reduce_expr(self.inp)
         return self.func(a)
 
 
@@ -96,9 +104,9 @@ class BinaryExpr(Vector):
     inp1: Vector
     inp2: Vector
 
-    def reduce(self, f):
-        a = reduce_expr(self.inp2, f)
-        b = reduce_expr(self.inp2, f)
+    def reduce(self):
+        a = reduce_expr(self.inp1)
+        b = reduce_expr(self.inp2)
         return self.func(a, b)
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|vector-expressions>>[5]
@@ -106,84 +114,126 @@ class BinaryExpr(Vector):
 class LiteralExpr(Vector):
     value: np.ndarray
 
-    def reduce(self, f):
+    def reduce(self):
         return self.value
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-coarse>>[init]
 @dataclass
 class Coarse:
-    archive: Path
     n_iter: int
+    system: Any
+    system = harmonic_oscillator(OMEGA0, ZETA)
 
     def solution(self, y, t0, t1):
-        with h5.File(self.archive, "a") as f:
-            return LiteralExpr(forward_euler(system)(reduce_expr(y, f), t0, t1))
+        a = LiteralExpr(forward_euler(self.system)(reduce_expr(y), t0, t1))
+        logging.debug(f"coarse result: {y} {reduce_expr(y)} {t0} {t1} {a}")
+        return a
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-fine>>[init]
+def generate_filename(name: str, n_iter: int, t0: float, t1: float) -> str:
+    return f"{name}-{n_iter:04}-{int(t0*1000):06}-{int(t1*1000):06}.h5"
+
 @dataclass
 class Fine:
-    archive: Path
+    parent: Path
+    name: str
     n_iter: int
+    system: Any
+    h: float
 
     def solution(self, y, t0, t1):
         logger = logging.getLogger()
-        n = math.ceil((t1 - t0) / H)
+        n = math.ceil((t1 - t0) / self.h)
         t = np.linspace(t0, t1, n + 1)
-        with h5.File(self.archive, "a", driver='mpio', comm=MPI.COMM_WORLD) as f:
-            logger.debug("fine %f - %f", t0, t1)
-            y0 = reduce_expr(y, f)
-            logger.debug("    %s", y0)
-            x = tabulate(forward_euler(system), reduce_expr(y, f), t)
 
-            loc = f"{self.n_iter:04}/fine-{int(t0*1000):06}-{int(t1*1000):06}"
-            ds = f.create_dataset(loc, data=x)
+        self.parent.mkdir(parents=True, exist_ok=True)
+        path = self.parent / generate_filename(self.name, self.n_iter, t0, t1)
+
+        with h5.File(path, "w") as f:
+            logger.debug("fine %f - %f", t0, t1)
+            y0 = reduce_expr(y)
+            logger.debug(":    %s -> %s", y, y0)
+            x = tabulate(forward_euler(self.system), reduce_expr(y), t)
+            ds = f.create_dataset("data", data=x)
             ds.attrs["t0"] = t0
             ds.attrs["t1"] = t1
+            ds.attrs["h"] = self.h
             ds.attrs["n"] = n
-        return H5Snap(loc, index[-1])
+        return H5Snap(path, "data", index[-1])
 # ~\~ end
 # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-history>>[init]
 @dataclass
 class History:
     archive: Path
-    history: list[Vector] = field(default_factory=list)
+    history: list[list[Vector]] = field(default_factory=list)
 
     def convergence_test(self, y) -> bool:
+        logger = logging.getLogger()
         self.history.append(y)
         if len(self.history) < 2:
             return False
-        with h5.File(self.archive, "r") as f:
-            a = reduce_expr(self.history[-2], f)
-            b = reduce_expr(self.history[-1], f)
-            return np.allclose(a, b, atol=1e-4)
+        a = np.array([reduce_expr(x) for x in self.history[-2]])
+        b = np.array([reduce_expr(x) for x in self.history[-1]])
+        maxdif = np.abs(a - b).max()
+        converged = maxdif < 1e-4
+        logger.info("maxdif of %f", maxdif)
+        if converged:
+            logger.info("Converged after %u iteration", len(self.history))
+        return converged
 # ~\~ end
 
-if __name__ == "__main__":
+def get_data(files: list[Path]) -> Iterator[np.ndarray]:
+    for n in files:
+        with h5.File(n, "r") as f:
+            yield f["data"][:]
+
+def combine_fine_data(files: list[Path]) -> np.ndarray:
+    data = get_data(files)
+    first = next(data)
+    return np.concatenate([first] + [x[1:] for x in data], axis=0)
+
+# def list_files(path: Path) -> list[Path]:
+#     all_files = path.glob("*.h5")
+#     return []
+
+def main(log: str = "WARNING", log_file: Optional[str] = None):
+    """Run model of dampened hormonic oscillator in Dask"""
+    log_level = getattr(logging, log.upper(), None)
+    if not isinstance(log_level, int):
+        raise ValueError(f"Invalid log level `{log}`")
+    logging.basicConfig(level=log_level, filename=log_file)
     # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-main>>[init]
     initialize()
     client = Client()
     # ~\~ end
     # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-main>>[1]
     OMEGA0 = 1.0
-    ZETA = 0.5
+    ZETA = 1.0
     H = 0.001
     system = harmonic_oscillator(OMEGA0, ZETA)
     # ~\~ end
     # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-main>>[2]
     y0 = np.array([1.0, 0.0])
-    t = np.linspace(0.0, 15.0, 10)
-    archive = Path("./harmonic-oscillator-euler.h5")
-    exact_result = underdamped_solution(OMEGA0, ZETA)(t)
-    euler_result = tabulate(Fine(archive, 0).solution, LiteralExpr(y0), t)
+    t = np.linspace(0.0, 15.0, 20)
+    archive = Path("./output/euler")
+    underdamped_solution(OMEGA0, ZETA)(t)
+    tabulate(Fine(archive, "fine", 0, system, H).solution, LiteralExpr(y0), t)
+
+    # euler_files = archive.glob("*.h5")
     # ~\~ end
     # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-main>>[3]
-    archive = Path("./harmonic-oscillator-parareal.h5")
+    archive = Path("./output/parareal")
     p = Parareal(
         client,
-        lambda n: Coarse(archive, n).solution,
-        lambda n: Fine(archive, n).solution)
+        lambda n: Coarse(n, system).solution,
+        lambda n: Fine(archive, "fine", n, system, H).solution)
     jobs = p.schedule(LiteralExpr(y0), t)
     history = History(archive)
     p.wait(jobs, history.convergence_test)
     # ~\~ end
+
+if __name__ == "__main__":
+    import time
+    argh.dispatch_command(main)
+    time.sleep(10)
 # ~\~ end

@@ -51,7 +51,7 @@
     code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
     code span.at { color: #7d9029; } /* Attribute */
     code span.bn { color: #40a070; } /* BaseN */
-    code span.bu { } /* BuiltIn */
+    code span.bu { color: #008000; } /* BuiltIn */
     code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
     code span.ch { color: #4070a0; } /* Char */
     code span.cn { color: #880000; } /* Constant */
@@ -64,7 +64,7 @@
     code span.ex { } /* Extension */
     code span.fl { color: #40a070; } /* Float */
     code span.fu { color: #06287e; } /* Function */
-    code span.im { } /* Import */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
     code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
     code span.kw { color: #007020; font-weight: bold; } /* Keyword */
     code span.op { color: #666666; } /* Operator */
@@ -78,7 +78,9 @@
     code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="theme.css" />
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
+  type="text/javascript"></script>
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
@@ -107,22 +109,31 @@
         <div class="col-6 col-s-9" id="main">
 <section id="about" class="level1">
 <h1>About</h1>
-<p>This package applies parallel-in-time integration, specifically Parareal, to OpenFOAM. We have two example cases: flow around a cylinder and laminar flow through a pipe.</p>
+<p>This package applies parallel-in-time integration, specifically
+Parareal, to OpenFOAM. We have two example cases: flow around a cylinder
+and laminar flow through a pipe.</p>
 <figure>
-<img src="./img/case-result.png" style="width: 100%" alt="Flow around cylinder with Reynold’s number 200." /><figcaption aria-hidden="true">Flow around cylinder with Reynold’s number 200.</figcaption>
+<img src="./img/case-result.png" style="width: 100%"
+alt="Flow around cylinder with Reynold’s number 200." />
+<figcaption aria-hidden="true">Flow around cylinder with Reynold’s
+number 200.</figcaption>
 </figure>
 <section id="installing" class="level2">
 <h2>Installing</h2>
-<p>To install additional requirements, have OpenFOAM installed and run:</p>
+<p>To install additional requirements, have OpenFOAM installed and
+run:</p>
 <pre class="shell"><code>poetry install</code></pre>
 </section>
 </section>
 <section id="architecture" class="level1">
 <h1>Architecture</h1>
-<p>From the perspective of the Parareal algorithm we are solving an ODE.</p>
+<p>From the perspective of the Parareal algorithm we are solving an
+ODE.</p>
 <section id="implementation" class="level2">
 <h2>Implementation</h2>
-<p>The abstract <code>Vector</code>, defined below, represents any single state in the simulation. In OpenFOAM we have the following folder structure:</p>
+<p>The abstract <code>Vector</code>, defined below, represents any
+single state in the simulation. In OpenFOAM we have the following folder
+structure:</p>
 <pre><code>├── 0
 │   ├── p
 │   └── U
@@ -138,10 +149,17 @@
     ├── decomposeParDict
     ├── fvSchemes
     └── fvSolution</code></pre>
-<p>For our application a <code>Vector</code> is then a combination of an OpenFOAM case (i.e. the folder structure above), and a string denoting the time directory matching the referred snapshot. The directory structure containing only the <code>0</code> time is now the <code>BaseCase</code>. We can copy a <code>Vector</code> by copying the contents of the <code>BaseCase</code> and the single time directory that belongs to that <code>Vector</code>.</p>
+<p>For our application a <code>Vector</code> is then a combination of an
+OpenFOAM case (i.e. the folder structure above), and a string denoting
+the time directory matching the referred snapshot. The directory
+structure containing only the <code>0</code> time is now the
+<code>BaseCase</code>. We can copy a <code>Vector</code> by copying the
+contents of the <code>BaseCase</code> and the single time directory that
+belongs to that <code>Vector</code>.</p>
 <div class="named-code-block">
 <p>file:pintFoam/vector.py</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> operator</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mmap</span>
@@ -165,17 +183,26 @@
 </div>
 <section id="base-case" class="level3">
 <h3>Base case</h3>
-<p>We will operate on a <code>Vector</code> the same way everything is done in OpenFOAM, that is:</p>
+<p>We will operate on a <code>Vector</code> the same way everything is
+done in OpenFOAM, that is:</p>
 <ol type="1">
 <li>Copy-paste a case (known as the base case)</li>
 <li>Edit the copy with new simulation parameters</li>
 <li>Run the simulation</li>
 </ol>
-<p>This is why for every <code>Vector</code> we define a <code>BaseCase</code> that is used to generate new vectors. The <code>BaseCase</code> should have only one time directory containing the initial conditions, namely <code>0</code>. The simulation generates new folders containing the data corresponding to different times. The time is coded, somewhat uncomfortably, in the directory name (<code>0.01</code>, <code>0.02</code>, and so on), which is why we store the time coordinate as a string.</p>
+<p>This is why for every <code>Vector</code> we define a
+<code>BaseCase</code> that is used to generate new vectors. The
+<code>BaseCase</code> should have only one time directory containing the
+initial conditions, namely <code>0</code>. The simulation generates new
+folders containing the data corresponding to different times. The time
+is coded, somewhat uncomfortably, in the directory name
+(<code>0.01</code>, <code>0.02</code>, and so on), which is why we store
+the time coordinate as a string.</p>
 <p>The class <code>Vector</code> takes care of all those details.</p>
 <div class="named-code-block">
 <p>«base-case»</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> BaseCase:</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Base case is a cleaned version of the system. If it contains any fields,</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">    it will only be the `0` time. Any field that is copied for manipulation will</span></span>
@@ -206,18 +233,23 @@
 <span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> path <span class="kw">in</span> <span class="va">self</span>.all_vector_paths():</span>
 <span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>            rmtree(path)</span></code></pre></div>
 </div>
-<p>In our implementation, if no name is given to a new vector, a random one is generated.</p>
+<p>In our implementation, if no name is given to a new vector, a random
+one is generated.</p>
 </section>
 <section id="retrieving-files-and-time-directories" class="level3">
 <h3>Retrieving files and time directories</h3>
-<p>Note that the <code>BaseCase</code> has a property <code>path</code>. The same property will be defined in <code>Vector</code>. We can use this common property to retrieve a <code>SolutionDirectory</code>, <code>ParameterFile</code> or <code>TimeDirectory</code>.</p>
+<p>Note that the <code>BaseCase</code> has a property <code>path</code>.
+The same property will be defined in <code>Vector</code>. We can use
+this common property to retrieve a <code>SolutionDirectory</code>,
+<code>ParameterFile</code> or <code>TimeDirectory</code>.</p>
 <ul class="task-list">
 <li><input type="checkbox" disabled="" />
 These are PyFoam routines that may need to be replaced</li>
 </ul>
 <div class="named-code-block">
 <p>«pintfoam-vector»</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solution_directory(case):</span>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solution_directory(case):</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> SolutionDirectory(case.path)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> parameter_file(case, relative_path):</span>
@@ -243,10 +275,12 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="vector" class="level3">
 <h3>Vector</h3>
-<p>The <code>Vector</code> class stores a reference to the <code>BaseCase</code>, a case name and a time.</p>
+<p>The <code>Vector</code> class stores a reference to the
+<code>BaseCase</code>, a case name and a time.</p>
 <div class="named-code-block">
 <p>«pintfoam-vector»</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Vector:</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    base: BaseCase</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    case: <span class="bu">str</span></span>
@@ -257,10 +291,13 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>operate<span class="op">&gt;&gt;</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>vector<span class="op">-</span>operators<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
-<p>From a vector we can extract a file path pointing to the specified time slot, list the containing files and read out <code>internalField</code> from any of those files.</p>
+<p>From a vector we can extract a file path pointing to the specified
+time slot, list the containing files and read out
+<code>internalField</code> from any of those files.</p>
 <div class="named-code-block">
 <p>«pintfoam-vector-properties»</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="at">@property</span></span>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="at">@property</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> path(<span class="va">self</span>):</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Case path, i.e. the path containing `system`, `constant` and snapshots.&quot;&quot;&quot;</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">self</span>.base.root <span class="op">/</span> <span class="va">self</span>.case</span>
@@ -280,10 +317,16 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [Vector(<span class="va">self</span>.base, <span class="va">self</span>.case, t)</span>
 <span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> t <span class="kw">in</span> get_times(<span class="va">self</span>.path)]</span></code></pre></div>
 </div>
-<p>We do arithmetic on <code>Vector</code> by cloning an existing <code>Vector</code> and then modify the <code>internalField</code> values inside. This can be done very efficiently using memory-mapped array access. The <code>mmap_data</code> member takes care of loading the data and closing the file when we’re done with it in a nifty context manager.</p>
+<p>We do arithmetic on <code>Vector</code> by cloning an existing
+<code>Vector</code> and then modify the <code>internalField</code>
+values inside. This can be done very efficiently using memory-mapped
+array access. The <code>mmap_data</code> member takes care of loading
+the data and closing the file when we’re done with it in a nifty context
+manager.</p>
 <div class="named-code-block">
 <p>«pintfoam-vector-properties»</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="at">@contextmanager</span></span>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="at">@contextmanager</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mmap_data(<span class="va">self</span>, field):</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Context manager that yields a **mutable** reference to the data contained</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">    in this snapshot. Mutations done to this array are mmapped to the disk directly.&quot;&quot;&quot;</span></span>
@@ -300,10 +343,12 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">del</span> content</span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        gc.collect()</span></code></pre></div>
 </div>
-<p>We clone a vector by creating a new vector and copying the internal fields.</p>
+<p>We clone a vector by creating a new vector and copying the internal
+fields.</p>
 <div class="named-code-block">
 <p>«pintfoam-vector-clone»</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clone(<span class="va">self</span>, name: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clone(<span class="va">self</span>, name: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Clone this vector to a new one. The clone only contains this single snapshot.&quot;&quot;&quot;</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.base.new_vector(name)</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    x.time <span class="op">=</span> <span class="va">self</span>.time</span>
@@ -311,15 +356,22 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    copytree(<span class="va">self</span>.dirname, x.dirname)</span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x</span></code></pre></div>
 </div>
-<p>In order to apply the parareal algorithm to our vectors (or indeed, any other algorithm worth that name), we need to define how to operate with them. Particularly, we’ll need to implement:</p>
+<p>In order to apply the parareal algorithm to our vectors (or indeed,
+any other algorithm worth that name), we need to define how to operate
+with them. Particularly, we’ll need to implement:</p>
 <ul>
-<li>Vector addition and subtraction (as we’ll need to sum and subtract the results of applying the coarse and fine integrators)</li>
-<li>Vector scaling (as the integrators involve scaling with the inverse of the step)</li>
+<li>Vector addition and subtraction (as we’ll need to sum and subtract
+the results of applying the coarse and fine integrators)</li>
+<li>Vector scaling (as the integrators involve scaling with the inverse
+of the step)</li>
 </ul>
-<p>In order to achieve this, first we’ll write generic recipes for <strong>any</strong> operation between vectors and <strong>any</strong> operation between a scalar and a vector:</p>
+<p>In order to achieve this, first we’ll write generic recipes for
+<strong>any</strong> operation between vectors and <strong>any</strong>
+operation between a scalar and a vector:</p>
 <div class="named-code-block">
 <p>«pintfoam-vector-operate»</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> zip_with(<span class="va">self</span>, other: Vector, op) <span class="op">-&gt;</span> Vector:</span>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> zip_with(<span class="va">self</span>, other: Vector, op) <span class="op">-&gt;</span> Vector:</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> <span class="va">self</span>.clone()</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> f <span class="kw">in</span> <span class="va">self</span>.fields:</span>
@@ -335,10 +387,12 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            a()[:] <span class="op">=</span> f(a())</span>
 <span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x</span></code></pre></div>
 </div>
-<p>We now have the tools to define vector addition, subtraction and scaling.</p>
+<p>We now have the tools to define vector addition, subtraction and
+scaling.</p>
 <div class="named-code-block">
 <p>«pintfoam-vector-operators»</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__sub__</span>(<span class="va">self</span>, other: Vector) <span class="op">-&gt;</span> Vector:</span>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__sub__</span>(<span class="va">self</span>, other: Vector) <span class="op">-&gt;</span> Vector:</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">self</span>.zip_with(other, operator.sub)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__add__</span>(<span class="va">self</span>, other: Vector) <span class="op">-&gt;</span> Vector:</span>
@@ -347,7 +401,9 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__mul__</span>(<span class="va">self</span>, scale: <span class="bu">float</span>) <span class="op">-&gt;</span> Vector:</span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">self</span>.<span class="bu">map</span>(<span class="kw">lambda</span> x: x <span class="op">*</span> scale)</span></code></pre></div>
 </div>
-<p>In the code chunk above we used the so-called magic methods. If we use a minus sign to subtract two vectors, the method <code>__sub__</code> is being executed under the hood.</p>
+<p>In the code chunk above we used the so-called magic methods. If we
+use a minus sign to subtract two vectors, the method
+<code>__sub__</code> is being executed under the hood.</p>
 </section>
 </section>
 </section>
@@ -355,7 +411,8 @@ These are PyFoam routines that may need to be replaced</li>
 <h1>OpenFOAM calls</h1>
 <div class="named-code-block">
 <p>file:pintFoam/foam.py</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional, Union</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -369,10 +426,12 @@ These are PyFoam routines that may need to be replaced</li>
 </div>
 <section id="setfields-utility" class="level2">
 <h2><code>setFields</code> utility</h2>
-<p>We may want to call <code>setFields</code> on our <code>Vector</code> to setup some test cases.</p>
+<p>We may want to call <code>setFields</code> on our <code>Vector</code>
+to setup some test cases.</p>
 <div class="named-code-block">
 <p>«pintfoam-set-fields»</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> set_fields(v, <span class="op">*</span>, default_field_values, regions):</span>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> set_fields(v, <span class="op">*</span>, default_field_values, regions):</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Wrapper for OpenFOAM&#39;s setFields.&quot;&quot;&quot;</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> parameter_file(v, <span class="st">&quot;system/setFieldsDict&quot;</span>)</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    x[<span class="st">&#39;defaultFieldValues&#39;</span>] <span class="op">=</span> default_field_values</span>
@@ -383,10 +442,15 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="mapfields" class="level2">
 <h2><code>mapFields</code></h2>
-<p>The <code>mapFields</code> utility interpolates a field from one mesh onto another. The resulting field values are written to the <code>0</code> time directory, so we need to rename that directory after calling <code>mapFields</code> for consistency with the <code>Vector</code> infrastrucutre.</p>
+<p>The <code>mapFields</code> utility interpolates a field from one mesh
+onto another. The resulting field values are written to the
+<code>0</code> time directory, so we need to rename that directory after
+calling <code>mapFields</code> for consistency with the
+<code>Vector</code> infrastrucutre.</p>
 <div class="named-code-block">
 <p>«pintfoam-map-fields»</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> map_fields(source: Vector, target: BaseCase, consistent<span class="op">=</span><span class="va">True</span>, map_method<span class="op">=</span><span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> map_fields(source: Vector, target: BaseCase, consistent<span class="op">=</span><span class="va">True</span>, map_method<span class="op">=</span><span class="va">None</span>) <span class="op">-&gt;</span> Vector:</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Wrapper for OpenFOAM&#39;s mapFields</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Use consistent=False if the initial and final boundaries differ.</span></span>
@@ -407,10 +471,14 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="blockmesh" class="level2">
 <h2><code>blockMesh</code></h2>
-<p>The <code>blockMesh</code> utility generates an OpenFOAM mesh from a description in the <code>blockMesh</code> format. This is usually called on a <code>baseCase</code> so that the mesh information is shared by all vectors.</p>
+<p>The <code>blockMesh</code> utility generates an OpenFOAM mesh from a
+description in the <code>blockMesh</code> format. This is usually called
+on a <code>baseCase</code> so that the mesh information is shared by all
+vectors.</p>
 <div class="named-code-block">
 <p>«pintfoam-block-mesh»</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_mesh(case: BaseCase):</span>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> block_mesh(case: BaseCase):</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Wrapper for OpenFOAM&#39;s blockMesh.&quot;&quot;&quot;</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    subprocess.run(<span class="st">&quot;blockMesh&quot;</span>, cwd<span class="op">=</span>case.path, check<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
 </div>
@@ -418,19 +486,36 @@ These are PyFoam routines that may need to be replaced</li>
 <section id="implementation-of-solution" class="level2">
 <h2>Implementation of <code>Solution</code></h2>
 <p>Remember, the definition of a <code>Solution</code>,</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>Solution <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>, <span class="bu">float</span>], Vector]</span></code></pre></div>
-<p>meaning, we write a function taking a current state <code>Vector</code>, the time <em>now</em>, and the <em>target</em> time, returning a new <code>Vector</code> for the target time.</p>
-<p>The solver will write directories with floating-point valued names. This is a very bad idea by the folks at OpenFOAM, but it is one we’ll have to live with. Suppose you have a time-step of <span class="math inline">\(0.1\)</span>, what will be the names of the directories if you integrate from <span class="math inline">\(0\)</span> to <span class="math inline">\(0.5\)</span>?</p>
-<div class="sourceCode" id="cb17" data-session="0"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>[x <span class="op">*</span> <span class="fl">0.1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">6</span>)]</span></code></pre></div>
-<p>In Python 3.7, this gives <code>[0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5]</code>. Surely, if you give a time-step of <span class="math inline">\(0.1\)</span> to OpenFOAM, it will create a directory named <code>0.3</code> instead. We’ll define the constant <code>epsilon</code> to aid us in identifying the correct state directory given a floating-point time.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>Solution <span class="op">=</span> Callable[[Vector, <span class="bu">float</span>, <span class="bu">float</span>], Vector]</span></code></pre></div>
+<p>meaning, we write a function taking a current state
+<code>Vector</code>, the time <em>now</em>, and the <em>target</em>
+time, returning a new <code>Vector</code> for the target time.</p>
+<p>The solver will write directories with floating-point valued names.
+This is a very bad idea by the folks at OpenFOAM, but it is one we’ll
+have to live with. Suppose you have a time-step of <span
+class="math inline">\(0.1\)</span>, what will be the names of the
+directories if you integrate from <span class="math inline">\(0\)</span>
+to <span class="math inline">\(0.5\)</span>?</p>
+<div class="sourceCode" id="cb17" data-session="0"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>[x <span class="op">*</span> <span class="fl">0.1</span> <span class="cf">for</span> x <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">6</span>)]</span></code></pre></div>
+<p>In Python 3.7, this gives
+<code>[0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5]</code>. Surely, if
+you give a time-step of <span class="math inline">\(0.1\)</span> to
+OpenFOAM, it will create a directory named <code>0.3</code> instead.
+We’ll define the constant <code>epsilon</code> to aid us in identifying
+the correct state directory given a floating-point time.</p>
 <div class="named-code-block">
 <p>«pintfoam-epsilon»</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>epsilon <span class="op">=</span> <span class="fl">1e-6</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>epsilon <span class="op">=</span> <span class="fl">1e-6</span></span></code></pre></div>
 </div>
-<p>Our solution depends on the solver chosen and the given time-step:</p>
+<p>Our solution depends on the solver chosen and the given
+time-step:</p>
 <div class="named-code-block">
 <p>«pintfoam-solution»</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> foam(solver: <span class="bu">str</span>, dt: <span class="bu">float</span>, x: Vector, t_0: <span class="bu">float</span>, t_1: <span class="bu">float</span>,</span>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> foam(solver: <span class="bu">str</span>, dt: <span class="bu">float</span>, x: Vector, t_0: <span class="bu">float</span>, t_1: <span class="bu">float</span>,</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>         write_interval: Optional[<span class="bu">float</span>] <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>         job_name: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>,</span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>         write_control: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;runTime&quot;</span>) <span class="op">-&gt;</span> Vector:</span>
@@ -450,10 +535,13 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="co">    &quot;&quot;&quot;</span></span>
 <span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>pintfoam<span class="op">-</span>solution<span class="op">-</span>function<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
-<p>The solver clones a new vector, sets the <code>controlDict</code>, runs the solver and then creates a new vector representing the last time slice.</p>
+<p>The solver clones a new vector, sets the <code>controlDict</code>,
+runs the solver and then creates a new vector representing the last time
+slice.</p>
 <div class="named-code-block">
 <p>«pintfoam-solution-function»</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">abs</span>(<span class="bu">float</span>(x.time) <span class="op">-</span> t_0) <span class="op">&lt;</span> epsilon, <span class="ss">f&quot;Times should match: </span><span class="sc">{</span>t_0<span class="sc">}</span><span class="ss"> != </span><span class="sc">{x.</span>time<span class="sc">}</span><span class="ss">.&quot;</span></span>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">abs</span>(<span class="bu">float</span>(x.time) <span class="op">-</span> t_0) <span class="op">&lt;</span> epsilon, <span class="ss">f&quot;Times should match: </span><span class="sc">{</span>t_0<span class="sc">}</span><span class="ss"> != </span><span class="sc">{</span>x<span class="sc">.</span>time<span class="sc">}</span><span class="ss">.&quot;</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> x.clone(job_name)</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>write_interval <span class="op">=</span> write_interval <span class="kw">or</span> (t_1 <span class="op">-</span> t_0)</span>
 <span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span><span class="bu">set</span><span class="op">-</span>control<span class="op">-</span><span class="bu">dict</span><span class="op">&gt;&gt;</span></span>
@@ -462,13 +550,16 @@ These are PyFoam routines that may need to be replaced</li>
 </div>
 <section id="controldict" class="level3">
 <h3><code>controlDict</code></h3>
-<p>Because writing the <code>controlDict</code> sometimes fails, we try it a few times. For this we need to create a backup of the original contents of <code>controlDict</code>.</p>
+<p>Because writing the <code>controlDict</code> sometimes fails, we try
+it a few times. For this we need to create a backup of the original
+contents of <code>controlDict</code>.</p>
 <div class="named-code-block">
 <p>«set-control-dict»</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>backup <span class="op">=</span> <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;system&quot;</span> <span class="op">/</span> <span class="st">&quot;controlDict&quot;</span>, <span class="st">&quot;r&quot;</span>).read()</span>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>backup <span class="op">=</span> <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;system&quot;</span> <span class="op">/</span> <span class="st">&quot;controlDict&quot;</span>, <span class="st">&quot;r&quot;</span>).read()</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):   <span class="co"># this sometimes fails, so we try a few times, maybe disk sync issue?</span></span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;Attempt </span><span class="sc">{i</span><span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss"> at writing controlDict&quot;</span>)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;Attempt </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss"> at writing controlDict&quot;</span>)</span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>        controlDict <span class="op">=</span> parameter_file(y, <span class="st">&quot;system/controlDict&quot;</span>)</span>
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;startFrom&#39;</span>] <span class="op">=</span> <span class="st">&quot;latestTime&quot;</span></span>
 <span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>        controlDict.content[<span class="st">&#39;startTime&#39;</span>] <span class="op">=</span> <span class="bu">float</span>(t_0)</span>
@@ -489,17 +580,20 @@ These are PyFoam routines that may need to be replaced</li>
 <h3>Run solver</h3>
 <div class="named-code-block">
 <p>«run-solver»</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;log.stdout&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> logfile, <span class="op">\</span></span>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;log.stdout&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> logfile, <span class="op">\</span></span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>     <span class="bu">open</span>(y.path <span class="op">/</span> <span class="st">&quot;log.stderr&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> errfile:</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    subprocess.run(solver, cwd<span class="op">=</span>y.path, check<span class="op">=</span><span class="va">True</span>, stdout<span class="op">=</span>logfile, stderr<span class="op">=</span>errfile)</span></code></pre></div>
 </div>
 </section>
 <section id="return-result" class="level3">
 <h3>Return result</h3>
-<p>We retrieve the time of the result by looking at the last time directory.</p>
+<p>We retrieve the time of the result by looking at the last time
+directory.</p>
 <div class="named-code-block">
 <p>«return-result»</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>t1_str <span class="op">=</span> get_times(y.path)[<span class="op">-</span><span class="dv">1</span>]</span>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>t1_str <span class="op">=</span> get_times(y.path)[<span class="op">-</span><span class="dv">1</span>]</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> Vector(y.base, y.case, t1_str)</span></code></pre></div>
 </div>
 </section>
@@ -509,14 +603,16 @@ These are PyFoam routines that may need to be replaced</li>
 <h1>Appendix A: Utils</h1>
 <div class="named-code-block">
 <p>file:pintFoam/utils.py</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>push<span class="op">-</span><span class="bu">dir</span><span class="op">&gt;&gt;</span></span>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>push<span class="op">-</span><span class="bu">dir</span><span class="op">&gt;&gt;</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>job<span class="op">-</span>names<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
 <section id="cleaning-up" class="level2">
 <h2>Cleaning up</h2>
 <div class="named-code-block">
 <p>file:pintFoam/clean.py</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> argh  <span class="co"># type:ignore</span></span>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> argh  <span class="co"># type:ignore</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .vector <span class="im">import</span> BaseCase</span>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -534,10 +630,13 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="pushd" class="level2">
 <h2><code>pushd</code></h2>
-<p>I haven’t been able (with simple attempts) to run a case outside the definition directory. Similar to the <code>pushd</code> bash command, I define a little utility in Python:</p>
+<p>I haven’t been able (with simple attempts) to run a case outside the
+definition directory. Similar to the <code>pushd</code> bash command, I
+define a little utility in Python:</p>
 <div class="named-code-block">
 <p>«push-dir»</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> contextlib <span class="im">import</span> contextmanager</span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Union</span>
@@ -579,7 +678,8 @@ These are PyFoam routines that may need to be replaced</li>
 <h2>Job names</h2>
 <div class="named-code-block">
 <p>«job-names»</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_job_name(n, t_0, t_1, uid, <span class="bu">id</span>, tlength<span class="op">=</span><span class="dv">4</span>):</span>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_job_name(n, t_0, t_1, uid, <span class="bu">id</span>, tlength<span class="op">=</span><span class="dv">4</span>):</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot; Auxiliary function to generate a job name.&quot;&quot;&quot;</span></span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> integrify(t, length<span class="op">=</span>tlength):</span>
@@ -597,7 +697,7 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
 <span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="bu">str</span>(integrify(t))</span>
 <span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f&quot;</span><span class="sc">{n}</span><span class="ss">-</span><span class="sc">{</span>stringify(t_0)<span class="sc">}</span><span class="ss">-</span><span class="sc">{</span>stringify(t_1)<span class="sc">}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">-</span><span class="sc">{</span>uid<span class="sc">.</span><span class="bu">hex</span><span class="sc">}</span><span class="ss">&quot;</span></span></code></pre></div>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f&quot;</span><span class="sc">{</span>n<span class="sc">}</span><span class="ss">-</span><span class="sc">{</span>stringify(t_0)<span class="sc">}</span><span class="ss">-</span><span class="sc">{</span>stringify(t_1)<span class="sc">}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">-</span><span class="sc">{</span>uid<span class="sc">.</span><span class="bu">hex</span><span class="sc">}</span><span class="ss">&quot;</span></span></code></pre></div>
 </div>
 </section>
 </section>
@@ -605,52 +705,99 @@ These are PyFoam routines that may need to be replaced</li>
 <h1>Example using MPI and Dask Futures</h1>
 <div class="named-code-block">
 <p>file:examples/mpi_futures.py</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co"># import numpy.typing as npt</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> (Union, Callable)</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> abc <span class="im">import</span> (ABC, abstractmethod)</span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>imports<span class="op">&gt;&gt;</span></span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>vector<span class="op">-</span>expressions<span class="op">&gt;&gt;</span></span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>coarse<span class="op">&gt;&gt;</span></span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>fine<span class="op">&gt;&gt;</span></span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>history<span class="op">&gt;&gt;</span></span>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> argh  <span class="co"># type: ignore</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># import numpy.typing as npt</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> (Union, Callable, Optional, Any, Iterator)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> abc <span class="im">import</span> (ABC, abstractmethod)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>imports<span class="op">&gt;&gt;</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>OMEGA0 <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>ZETA <span class="op">=</span> <span class="fl">0.5</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>H <span class="op">=</span> <span class="fl">0.001</span></span>
 <span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>main<span class="op">&gt;&gt;</span></span></code></pre></div>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>vector<span class="op">-</span>expressions<span class="op">&gt;&gt;</span></span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>coarse<span class="op">&gt;&gt;</span></span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>fine<span class="op">&gt;&gt;</span></span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>history<span class="op">&gt;&gt;</span></span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_data(files: <span class="bu">list</span>[Path]) <span class="op">-&gt;</span> Iterator[np.ndarray]:</span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> n <span class="kw">in</span> files:</span>
+<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> h5.File(n, <span class="st">&quot;r&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> f[<span class="st">&quot;data&quot;</span>][:]</span>
+<span id="cb28-24"><a href="#cb28-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-25"><a href="#cb28-25" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> combine_fine_data(files: <span class="bu">list</span>[Path]) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb28-26"><a href="#cb28-26" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span> get_data(files)</span>
+<span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a>    first <span class="op">=</span> <span class="bu">next</span>(data)</span>
+<span id="cb28-28"><a href="#cb28-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.concatenate([first] <span class="op">+</span> [x[<span class="dv">1</span>:] <span class="cf">for</span> x <span class="kw">in</span> data], axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb28-29"><a href="#cb28-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-30"><a href="#cb28-30" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> list_files(path: Path) <span class="op">-&gt;</span> <span class="bu">list</span>[Path]:</span>
+<span id="cb28-31"><a href="#cb28-31" aria-hidden="true" tabindex="-1"></a>    all_files <span class="op">=</span> path.glob(<span class="st">&quot;*.h5&quot;</span>)</span>
+<span id="cb28-32"><a href="#cb28-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> []</span>
+<span id="cb28-33"><a href="#cb28-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-34"><a href="#cb28-34" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main(log: <span class="bu">str</span> <span class="op">=</span> <span class="st">&quot;WARNING&quot;</span>, log_file: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>):</span>
+<span id="cb28-35"><a href="#cb28-35" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Run model of dampened hormonic oscillator in Dask&quot;&quot;&quot;</span></span>
+<span id="cb28-36"><a href="#cb28-36" aria-hidden="true" tabindex="-1"></a>    log_level <span class="op">=</span> <span class="bu">getattr</span>(logging, log.upper(), <span class="va">None</span>)</span>
+<span id="cb28-37"><a href="#cb28-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="bu">isinstance</span>(log_level, <span class="bu">int</span>):</span>
+<span id="cb28-38"><a href="#cb28-38" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f&quot;Invalid log level `</span><span class="sc">{</span>log<span class="sc">}</span><span class="ss">`&quot;</span>)</span>
+<span id="cb28-39"><a href="#cb28-39" aria-hidden="true" tabindex="-1"></a>    logging.basicConfig(level<span class="op">=</span>log_level, filename<span class="op">=</span>log_file)</span>
+<span id="cb28-40"><a href="#cb28-40" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>example<span class="op">-</span>mpi<span class="op">-</span>main<span class="op">&gt;&gt;</span></span>
+<span id="cb28-41"><a href="#cb28-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-42"><a href="#cb28-42" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb28-43"><a href="#cb28-43" aria-hidden="true" tabindex="-1"></a>    argh.dispatch_command(main)</span></code></pre></div>
 </div>
-<p>There are two modes in which we may run Dask with MPI. One with a <code>dask-mpi</code> running as external scheduler, the other running everything as a single script. For this example we opt for the second, straight from the dask-mpi documentation:</p>
+<p>There are two modes in which we may run Dask with MPI. One with a
+<code>dask-mpi</code> running as external scheduler, the other running
+everything as a single script. For this example we opt for the second,
+straight from the dask-mpi documentation:</p>
 <div class="named-code-block">
 <p>«example-mpi-imports»</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dask_mpi <span class="im">import</span> initialize  <span class="co"># type: ignore</span></span>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># from dask_mpi import initialize  # type: ignore</span></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dask.distributed <span class="im">import</span> Client  <span class="co"># type: ignore</span></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mpi4py <span class="im">import</span> MPI</span></code></pre></div>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># from mpi4py import MPI</span></span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-main»</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>initialize()</span>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># initialize()</span></span>
 <span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> Client()</span></code></pre></div>
 </div>
 <section id="vector-arithmetic-expressions" class="level2">
 <h2>Vector Arithmetic Expressions</h2>
-<p>The following technique is definitely overkill for our harmonic oscillator example, but it is also in general a good recipe for running Numpy based simulations in an organized manner.</p>
-<p>It may be convenient to treat our <code>Vector</code> operations such that they are only performed once their output is needed. In the meantime we have to store the arithmetic in a serializable <code>Expression</code> value.</p>
-<p>We will be using <code>functools.partial</code> and functions <code>operator.add</code>, <code>operator.mul</code> etc, to create a data structure that describes all the operations that we might do on a <code>Vector</code>. Results may be stored for reference in a <code>hdf5</code> file, a feature that can also be hidden behind our <code>Vector</code> interface.</p>
+<p>The following technique is definitely overkill for our harmonic
+oscillator example, but it is also in general a good recipe for running
+Numpy based simulations in an organized manner.</p>
+<p>It may be convenient to treat our <code>Vector</code> operations such
+that they are only performed once their output is needed. In the
+meantime we have to store the arithmetic in a serializable
+<code>Expression</code> value.</p>
+<p>We will be using <code>functools.partial</code> and functions
+<code>operator.add</code>, <code>operator.mul</code> etc, to create a
+data structure that describes all the operations that we might do on a
+<code>Vector</code>. Results may be stored for reference in a
+<code>hdf5</code> file, a feature that can also be hidden behind our
+<code>Vector</code> interface.</p>
 <div class="named-code-block">
 <p>«example-mpi-imports»</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> operator</span>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> operator</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> functools <span class="im">import</span> partial</span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> h5py <span class="im">as</span> h5  <span class="co"># type: ignore</span></span></code></pre></div>
 </div>
-<p>We create a <code>Vector</code> class that satisfies the <code>Vector</code> concept outlined earlier. We store the operations in terms of unary and binary operators.</p>
+<p>We create a <code>Vector</code> class that satisfies the
+<code>Vector</code> concept outlined earlier. We store the operations in
+terms of unary and binary operators.</p>
 <div class="named-code-block">
 <p>«vector-expressions»</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Vector(ABC):</span>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Vector(ABC):</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">@abstractmethod</span></span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>: Vector, f: h5.File) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>: Vector) <span class="op">-&gt;</span> np.ndarray:</span>
 <span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
 <span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__add__</span>(<span class="va">self</span>, other):</span>
@@ -665,35 +812,47 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__rmul__</span>(<span class="va">self</span>, scale):</span>
 <span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> UnaryExpr(partial(operator.mul, scale), <span class="va">self</span>)</span></code></pre></div>
 </div>
-<p>The <code>Vector</code> class acts as a base class for the implementation of <code>BinaryExpr</code> and <code>UnaryExpr</code>, so that we can nest expressions accordingly. To force computation of a <code>Vector</code>, we supply the <code>reduce_expr</code> function that, in an example of terrible duck-typing, calls the <code>reduce</code> method recursively, until an object is reached that doesn’t have the <code>reduce</code> method.</p>
+<p>The <code>Vector</code> class acts as a base class for the
+implementation of <code>BinaryExpr</code> and <code>UnaryExpr</code>, so
+that we can nest expressions accordingly. To force computation of a
+<code>Vector</code>, we supply the <code>reduce_expr</code> function
+that, in an example of terrible duck-typing, calls the
+<code>reduce</code> method recursively, until an object is reached that
+doesn’t have the <code>reduce</code> method.</p>
 <div class="named-code-block">
 <p>«vector-expressions»</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reduce_expr(expr: Union[np.ndarray, Vector], f: h5.File) <span class="op">-&gt;</span> np.ndarray:</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="bu">isinstance</span>(expr, np.ndarray):</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> expr.<span class="bu">reduce</span>(f)</span>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reduce_expr(expr: Union[np.ndarray, Vector]) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">isinstance</span>(expr, Vector):</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> expr.<span class="bu">reduce</span>()</span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
 <span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> expr</span></code></pre></div>
 </div>
 <section id="hdf5-vectors" class="level3">
 <h3>HDF5 Vectors</h3>
-<p>This means we can also hide variables that are stored in an HDF5 file behind this interface:</p>
+<p>This means we can also hide variables that are stored in an HDF5 file
+behind this interface:</p>
 <div class="named-code-block">
 <p>«vector-expressions»</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> H5Snap(Vector):</span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    loc: <span class="bu">str</span></span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">slice</span>: <span class="bu">list</span>[Union[<span class="va">None</span>, <span class="bu">int</span>, <span class="bu">slice</span>]]</span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> data(<span class="va">self</span>, f):</span>
-<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> f[<span class="va">self</span>.loc].<span class="fu">__getitem__</span>(<span class="bu">tuple</span>(<span class="va">self</span>.<span class="bu">slice</span>))</span>
-<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>, f):</span>
-<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.data(f)</span></code></pre></div>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    path: Path</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    loc: <span class="bu">str</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">slice</span>: <span class="bu">list</span>[Union[<span class="va">None</span>, <span class="bu">int</span>, <span class="bu">slice</span>]]</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> data(<span class="va">self</span>):</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> h5.File(<span class="va">self</span>.path, <span class="st">&quot;r&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> f[<span class="va">self</span>.loc].<span class="fu">__getitem__</span>(<span class="bu">tuple</span>(<span class="va">self</span>.<span class="bu">slice</span>))</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>):</span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.data()</span></code></pre></div>
 </div>
 <p>To generate slices in a nice manner we can use a helper class:</p>
 <div class="named-code-block">
 <p>«vector-expressions»</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Index:</span>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Index:</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__getitem__</span>(<span class="va">self</span>, idx):</span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">isinstance</span>(idx, <span class="bu">tuple</span>):</span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="bu">list</span>(idx)</span>
@@ -705,16 +864,23 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="operators" class="level3">
 <h3>Operators</h3>
-<p>There are two classes of operators, unary and binary (more arguments can usually be expressed as a composition of unary and binary forms). We store the arguments together with a function operating on the arguments. The function should be serializable (e.g. using <code>pickle</code>), meaning that <code>lambda</code> expressions are not allowed, but <code>partial</code> applications and functions in <code>operator</code> typically are ok.</p>
+<p>There are two classes of operators, unary and binary (more arguments
+can usually be expressed as a composition of unary and binary forms). We
+store the arguments together with a function operating on the arguments.
+The function should be serializable (e.g. using <code>pickle</code>),
+meaning that <code>lambda</code> expressions are not allowed, but
+<code>partial</code> applications and functions in <code>operator</code>
+typically are ok.</p>
 <div class="named-code-block">
 <p>«vector-expressions»</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> UnaryExpr(Vector):</span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    func: Callable[[np.ndarray], np.ndarray]</span>
 <span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    inp: Vector</span>
 <span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>, f):</span>
-<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> reduce_expr(<span class="va">self</span>.inp, f)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>):</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> reduce_expr(<span class="va">self</span>.inp)</span>
 <span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.func(a)</span>
 <span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a></span>
@@ -724,22 +890,24 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>    inp1: Vector</span>
 <span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>    inp2: Vector</span>
 <span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>, f):</span>
-<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> reduce_expr(<span class="va">self</span>.inp2, f)</span>
-<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> reduce_expr(<span class="va">self</span>.inp2, f)</span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>):</span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> reduce_expr(<span class="va">self</span>.inp2)</span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> reduce_expr(<span class="va">self</span>.inp2)</span>
 <span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.func(a, b)</span></code></pre></div>
 </div>
 </section>
 <section id="literal-expressions" class="level3">
 <h3>Literal expressions</h3>
-<p>To bootstrap our computation we may need to define a <code>Vector</code> directly represented by a Numpy array.</p>
+<p>To bootstrap our computation we may need to define a
+<code>Vector</code> directly represented by a Numpy array.</p>
 <div class="named-code-block">
 <p>«vector-expressions»</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LiteralExpr(Vector):</span>
 <span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    value: np.ndarray</span>
 <span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>, f):</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">reduce</span>(<span class="va">self</span>):</span>
 <span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.value</span></code></pre></div>
 </div>
 </section>
@@ -748,7 +916,8 @@ These are PyFoam routines that may need to be replaced</li>
 <h2>Running the harmonic oscillator</h2>
 <div class="named-code-block">
 <p>«example-mpi-imports»</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.parareal.futures <span class="im">import</span> (Parareal)</span>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.parareal.futures <span class="im">import</span> (Parareal)</span>
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.parareal.forward_euler <span class="im">import</span> forward_euler</span>
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="co"># from pintFoam.parareal.iterate_solution import iterate_solution</span></span>
@@ -757,83 +926,102 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
 <span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="co"># from uuid import uuid4</span></span>
-<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
-<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>logging.basicConfig()</span></code></pre></div>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-main»</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>OMEGA0 <span class="op">=</span> <span class="fl">1.0</span></span>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>OMEGA0 <span class="op">=</span> <span class="fl">1.0</span></span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>ZETA <span class="op">=</span> <span class="fl">0.5</span></span>
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>H <span class="op">=</span> <span class="fl">0.001</span></span>
 <span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>system <span class="op">=</span> harmonic_oscillator(OMEGA0, ZETA)</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-coarse»</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Coarse:</span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>    archive: Path</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>    n_iter: <span class="bu">int</span></span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> solution(<span class="va">self</span>, y, t0, t1):</span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> h5.File(<span class="va">self</span>.archive, <span class="st">&quot;a&quot;</span>) <span class="im">as</span> f:</span>
-<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> LiteralExpr(forward_euler(system)(reduce_expr(y, f), t0, t1))</span></code></pre></div>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>    n_iter: <span class="bu">int</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>    system: Any</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>    system <span class="op">=</span> harmonic_oscillator(OMEGA0, ZETA)</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> solution(<span class="va">self</span>, y, t0, t1):</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> LiteralExpr(forward_euler(<span class="va">self</span>.system)(reduce_expr(y), t0, t1))</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-fine»</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Fine:</span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    archive: Path</span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    n_iter: <span class="bu">int</span></span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> solution(<span class="va">self</span>, y, t0, t1):</span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>        logger <span class="op">=</span> logging.getLogger()</span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>        n <span class="op">=</span> math.ceil((t1 <span class="op">-</span> t0) <span class="op">/</span> H)</span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>        t <span class="op">=</span> np.linspace(t0, t1, n <span class="op">+</span> <span class="dv">1</span>)</span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> h5.File(<span class="va">self</span>.archive, <span class="st">&quot;a&quot;</span>, driver<span class="op">=</span><span class="st">&#39;mpio&#39;</span>, comm<span class="op">=</span>MPI.COMM_WORLD) <span class="im">as</span> f:</span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>            logger.debug(<span class="st">&quot;fine </span><span class="sc">%f</span><span class="st"> - </span><span class="sc">%f</span><span class="st">&quot;</span>, t0, t1)</span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>            y0 <span class="op">=</span> reduce_expr(y, f)</span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>            logger.debug(<span class="st">&quot;    </span><span class="sc">%s</span><span class="st">&quot;</span>, y0)</span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>            x <span class="op">=</span> tabulate(forward_euler(system), reduce_expr(y, f), t)</span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>            loc <span class="op">=</span> <span class="ss">f&quot;</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>n_iter<span class="sc">:04}</span><span class="ss">/fine-</span><span class="sc">{</span><span class="bu">int</span>(t0<span class="op">*</span><span class="dv">1000</span>)<span class="sc">:06}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t1<span class="op">*</span><span class="dv">1000</span>)<span class="sc">:06}</span><span class="ss">&quot;</span></span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>            ds <span class="op">=</span> f.create_dataset(loc, data<span class="op">=</span>x)</span>
-<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>            ds.attrs[<span class="st">&quot;t0&quot;</span>] <span class="op">=</span> t0</span>
-<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>            ds.attrs[<span class="st">&quot;t1&quot;</span>] <span class="op">=</span> t1</span>
-<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>            ds.attrs[<span class="st">&quot;n&quot;</span>] <span class="op">=</span> n</span>
-<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> H5Snap(loc, index[<span class="op">-</span><span class="dv">1</span>])</span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_filename(name: <span class="bu">str</span>, n_iter: <span class="bu">int</span>, t0: <span class="bu">float</span>, t1: <span class="bu">float</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f&quot;</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">-</span><span class="sc">{</span>n_iter<span class="sc">:04}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t0<span class="op">*</span><span class="dv">1000</span>)<span class="sc">:06}</span><span class="ss">-</span><span class="sc">{</span><span class="bu">int</span>(t1<span class="op">*</span><span class="dv">1000</span>)<span class="sc">:06}</span><span class="ss">.h5&quot;</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Fine:</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    parent: Path</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    n_iter: <span class="bu">int</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>    system: Any</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>    h: <span class="bu">float</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> solution(<span class="va">self</span>, y, t0, t1):</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>        logger <span class="op">=</span> logging.getLogger()</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>        n <span class="op">=</span> math.ceil((t1 <span class="op">-</span> t0) <span class="op">/</span> <span class="va">self</span>.h)</span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>        t <span class="op">=</span> np.linspace(t0, t1, n <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.parent.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>        path <span class="op">=</span> <span class="va">self</span>.parent <span class="op">/</span> generate_filename(<span class="va">self</span>.name, <span class="va">self</span>.n_iter, t0, t1)</span>
+<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> h5.File(path, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>            logger.debug(<span class="st">&quot;fine </span><span class="sc">%f</span><span class="st"> - </span><span class="sc">%f</span><span class="st">&quot;</span>, t0, t1)</span>
+<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a>            y0 <span class="op">=</span> reduce_expr(y)</span>
+<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a>            logger.debug(<span class="st">&quot;    </span><span class="sc">%s</span><span class="st">&quot;</span>, y0)</span>
+<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a>            x <span class="op">=</span> tabulate(forward_euler(<span class="va">self</span>.system), reduce_expr(y), t)</span>
+<span id="cb41-25"><a href="#cb41-25" aria-hidden="true" tabindex="-1"></a>            ds <span class="op">=</span> f.create_dataset(<span class="st">&quot;data&quot;</span>, data<span class="op">=</span>x)</span>
+<span id="cb41-26"><a href="#cb41-26" aria-hidden="true" tabindex="-1"></a>            ds.attrs[<span class="st">&quot;t0&quot;</span>] <span class="op">=</span> t0</span>
+<span id="cb41-27"><a href="#cb41-27" aria-hidden="true" tabindex="-1"></a>            ds.attrs[<span class="st">&quot;t1&quot;</span>] <span class="op">=</span> t1</span>
+<span id="cb41-28"><a href="#cb41-28" aria-hidden="true" tabindex="-1"></a>            ds.attrs[<span class="st">&quot;n&quot;</span>] <span class="op">=</span> n</span>
+<span id="cb41-29"><a href="#cb41-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> H5Snap(path, <span class="st">&quot;data&quot;</span>, index[<span class="op">-</span><span class="dv">1</span>])</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-main»</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>y0 <span class="op">=</span> np.array([<span class="fl">1.0</span>, <span class="fl">0.0</span>])</span>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>y0 <span class="op">=</span> np.array([<span class="fl">1.0</span>, <span class="fl">0.0</span>])</span>
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">15.0</span>, <span class="dv">10</span>)</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>archive <span class="op">=</span> Path(<span class="st">&quot;./harmonic-oscillator-euler.h5&quot;</span>)</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>exact_result <span class="op">=</span> underdamped_solution(OMEGA0, ZETA)(t)</span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>euler_result <span class="op">=</span> tabulate(Fine(archive, <span class="dv">0</span>).solution, LiteralExpr(y0), t)</span></code></pre></div>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>archive <span class="op">=</span> Path(<span class="st">&quot;./output/euler&quot;</span>)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>underdamped_solution(OMEGA0, ZETA)(t)</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>tabulate(Fine(archive, <span class="st">&quot;fine&quot;</span>, <span class="dv">0</span>, system, H).solution, LiteralExpr(y0), t)</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>euler_files <span class="op">=</span> archive.glob</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-history»</p>
-<div class="sourceCode" id="cb43"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb43"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> History:</span>
 <span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    archive: Path</span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    history: <span class="bu">list</span>[Vector] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    history: <span class="bu">list</span>[<span class="bu">list</span>[Vector]] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
 <span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> convergence_test(<span class="va">self</span>, y) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.history.append(y)</span>
-<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">len</span>(<span class="va">self</span>.history) <span class="op">&lt;</span> <span class="dv">2</span>:</span>
-<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">False</span></span>
-<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> h5.File(<span class="va">self</span>.archive, <span class="st">&quot;r&quot;</span>) <span class="im">as</span> f:</span>
-<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>            a <span class="op">=</span> reduce_expr(<span class="va">self</span>.history[<span class="op">-</span><span class="dv">2</span>], f)</span>
-<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>            b <span class="op">=</span> reduce_expr(<span class="va">self</span>.history[<span class="op">-</span><span class="dv">1</span>], f)</span>
-<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> np.allclose(a, b, atol<span class="op">=</span><span class="fl">1e-4</span>)</span></code></pre></div>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>        logger <span class="op">=</span> logging.getLogger()</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.history.append(y)</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">len</span>(<span class="va">self</span>.history) <span class="op">&lt;</span> <span class="dv">2</span>:</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> np.array([reduce_expr(x) <span class="cf">for</span> x <span class="kw">in</span> <span class="va">self</span>.history[<span class="op">-</span><span class="dv">2</span>]])</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> np.array([reduce_expr(x) <span class="cf">for</span> x <span class="kw">in</span> <span class="va">self</span>.history[<span class="op">-</span><span class="dv">1</span>]])</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>        maxdif <span class="op">=</span> np.<span class="bu">abs</span>(a <span class="op">-</span> b).<span class="bu">max</span>()</span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>        converged <span class="op">=</span> maxdif <span class="op">&lt;</span> <span class="fl">1e-4</span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>        logger.info(<span class="st">&quot;maxdif of </span><span class="sc">%f</span><span class="st">&quot;</span>, maxdif)</span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> converged:</span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>            logger.info(<span class="st">&quot;Converged after </span><span class="sc">%u</span><span class="st"> iteration&quot;</span>, <span class="bu">len</span>(<span class="va">self</span>.history))</span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> converged</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«example-mpi-main»</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>archive <span class="op">=</span> Path(<span class="st">&quot;./harmonic-oscillator-parareal.h5&quot;</span>)</span>
+<div class="sourceCode" id="cb44"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>archive <span class="op">=</span> Path(<span class="st">&quot;./output/parareal&quot;</span>)</span>
 <span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> Parareal(</span>
 <span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    client,</span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> n: Coarse(archive, n).solution,</span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> n: Fine(archive, n).solution)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> n: Coarse(n, system).solution,</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> n: Fine(archive, <span class="st">&quot;fine&quot;</span>, n, system, H).solution)</span>
 <span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>jobs <span class="op">=</span> p.schedule(LiteralExpr(y0), t)</span>
 <span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>history <span class="op">=</span> History(archive)</span>
 <span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>p.wait(jobs, history.convergence_test)</span></code></pre></div>
@@ -842,10 +1030,15 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="implementation-of-parareal-using-futures" class="level1">
 <h1>Implementation of Parareal using Futures</h1>
-<p>We reimplement Parareal in the <code>futures</code> framework of Dask. We have a few helper functions: <code>identity</code> to be used as default instance for the mappings between coarse and fine meshes, and <code>pairs</code>, a function that iterates through successive pairs of a list.</p>
+<p>We reimplement Parareal in the <code>futures</code> framework of
+Dask. We have a few helper functions: <code>identity</code> to be used
+as default instance for the mappings between coarse and fine meshes, and
+<code>pairs</code>, a function that iterates through successive pairs of
+a list.</p>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/futures.py</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Solution, Mapping, Vector)</span>
+<div class="sourceCode" id="cb45"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Solution, Mapping, Vector)</span>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> (Callable)</span>
 <span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
 <span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> math <span class="im">import</span> ceil</span>
@@ -861,15 +1054,18 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pairs(lst):</span>
 <span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">zip</span>(lst[:<span class="op">-</span><span class="dv">1</span>], lst[<span class="dv">1</span>:])</span></code></pre></div>
 </div>
-<p>We need to send every operation to a remote worker, that includes summing the vectors from coarse and fine integrators.</p>
+<p>We need to send every operation to a remote worker, that includes
+summing the vectors from coarse and fine integrators.</p>
 <div class="named-code-block">
 <p>«parareal-futures»</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> combine(c1: Vector, f1: Vector, c2: Vector) <span class="op">-&gt;</span> Vector:</span>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> combine(c1: Vector, f1: Vector, c2: Vector) <span class="op">-&gt;</span> Vector:</span>
 <span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> c1 <span class="op">+</span> f1 <span class="op">-</span> c2</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«time-windows»</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> time_windows(times, window_size):</span>
+<div class="sourceCode" id="cb47"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> time_windows(times, window_size):</span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Split the times vector in a set of time windows of a given size.</span></span>
 <span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
@@ -883,10 +1079,14 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> window_size</span>
 <span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [times[i<span class="op">*</span>m:<span class="bu">min</span>(i<span class="op">*</span>m<span class="op">+</span>m<span class="op">+</span><span class="dv">1</span>, <span class="bu">len</span>(times))] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n)]</span></code></pre></div>
 </div>
-<p>Every call that actually requires some of the data needs to be sent to the remote worker(s). Where we could get away before with putting everything in a closure, now it is easier to make a class that includes the Dask <code>Client</code> instance.</p>
+<p>Every call that actually requires some of the data needs to be sent
+to the remote worker(s). Where we could get away before with putting
+everything in a closure, now it is easier to make a class that includes
+the Dask <code>Client</code> instance.</p>
 <div class="named-code-block">
 <p>«parareal-futures»</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<div class="sourceCode" id="cb48"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Parareal:</span>
 <span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>    client: Client</span>
 <span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>    coarse: Callable[[<span class="bu">int</span>], Solution]</span>
@@ -914,26 +1114,34 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb48-26"><a href="#cb48-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb48-27"><a href="#cb48-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;&lt;</span>parareal<span class="op">-</span>methods<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
-<p>The <code>step</code> method implements the core parareal algorithm.</p>
+<p>The <code>step</code> method implements the core parareal
+algorithm.</p>
 <div class="named-code-block">
 <p>«parareal-methods»</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> step(<span class="va">self</span>, n_iter: <span class="bu">int</span>, y_prev: <span class="bu">list</span>[Future], t: NDArray[np.float64]) <span class="op">-&gt;</span> <span class="bu">list</span>[Future]:</span>
+<div class="sourceCode" id="cb49"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> step(<span class="va">self</span>, n_iter: <span class="bu">int</span>, y_prev: <span class="bu">list</span>[Future], t: NDArray[np.float64]) <span class="op">-&gt;</span> <span class="bu">list</span>[Future]:</span>
 <span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> t.size</span>
 <span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>    y_next <span class="op">=</span> [<span class="va">None</span>] <span class="op">*</span> m</span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    y_next[<span class="dv">0</span>] <span class="op">=</span> y_prev[<span class="dv">0</span>]</span>
-<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, m):</span>
-<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>        c1 <span class="op">=</span> <span class="va">self</span>._c2f(<span class="va">self</span>._coarse(n_iter, <span class="va">self</span>.f2c(y_next[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i]))</span>
-<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>        f1 <span class="op">=</span> <span class="va">self</span>._fine(n_iter, y_prev[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i])</span>
-<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>        c2 <span class="op">=</span> <span class="va">self</span>._c2f(<span class="va">self</span>._coarse(n_iter, <span class="va">self</span>.f2c(y_prev[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i]))</span>
-<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>        y_next[i] <span class="op">=</span> <span class="va">self</span>.client.submit(combine, c1, f1, c2)</span>
-<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> y_next</span></code></pre></div>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_iter):</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>        y_next[i] <span class="op">=</span> y_prev[i]</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_iter, m):</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>        c1 <span class="op">=</span> <span class="va">self</span>._c2f(<span class="va">self</span>._coarse(n_iter, <span class="va">self</span>.f2c(y_next[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i]))</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>        f1 <span class="op">=</span> <span class="va">self</span>._fine(n_iter, y_prev[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i])</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>        c2 <span class="op">=</span> <span class="va">self</span>._c2f(<span class="va">self</span>._coarse(n_iter, <span class="va">self</span>.f2c(y_prev[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i]))</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>        y_next[i] <span class="op">=</span> <span class="va">self</span>.client.submit(combine, c1, f1, c2)</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> y_next</span></code></pre></div>
 </div>
-<p>We schedule every possible iteration of parareal as a future. The tactic is to cancel remaining jobs only once we found a converging result. This way, workers can compute next iterations, even if the last step of the previous iteration is not yet complete and tested for convergence.</p>
+<p>We schedule every possible iteration of parareal as a future. The
+tactic is to cancel remaining jobs only once we found a converging
+result. This way, workers can compute next iterations, even if the last
+step of the previous iteration is not yet complete and tested for
+convergence.</p>
 <div class="named-code-block">
 <p>«parareal-methods»</p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> schedule(<span class="va">self</span>, y_0: Vector, t: NDArray[np.float64]) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">list</span>[Future]]:</span>
+<div class="sourceCode" id="cb50"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> schedule(<span class="va">self</span>, y_0: Vector, t: NDArray[np.float64]) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">list</span>[Future]]:</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># schedule initial coarse integration</span></span>
 <span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>    y_init <span class="op">=</span> [<span class="va">self</span>.client.scatter(y_0)]</span>
 <span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (a, b) <span class="kw">in</span> pairs(t):</span>
@@ -946,10 +1154,12 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jobs</span></code></pre></div>
 </div>
-<p>The <code>wait</code> method then gathers results and returns the first iteration that satisfies <code>convergence_test</code>.</p>
+<p>The <code>wait</code> method then gathers results and returns the
+first iteration that satisfies <code>convergence_test</code>.</p>
 <div class="named-code-block">
 <p>«parareal-methods»</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> wait(<span class="va">self</span>, jobs, convergence_test):</span>
+<div class="sourceCode" id="cb51"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> wait(<span class="va">self</span>, jobs, convergence_test):</span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(jobs)):</span>
 <span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>        result <span class="op">=</span> <span class="va">self</span>.client.gather(jobs[i])</span>
 <span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> convergence_test(result):</span>
@@ -963,7 +1173,8 @@ These are PyFoam routines that may need to be replaced</li>
 <p>We may test this on the harmonic oscillator.</p>
 <div class="named-code-block">
 <p>file:test/test_futures.py</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<div class="sourceCode" id="cb52"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
 <span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> functools <span class="im">import</span> partial</span>
 <span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
 <span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy.typing <span class="im">import</span> NDArray</span>
@@ -1027,7 +1238,8 @@ These are PyFoam routines that may need to be replaced</li>
 <h1>Parareal</h1>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/__init__.py</p>
-<div class="sourceCode" id="cb53"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .tabulate_solution <span class="im">import</span> tabulate</span>
+<div class="sourceCode" id="cb53"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .tabulate_solution <span class="im">import</span> tabulate</span>
 <span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .parareal <span class="im">import</span> parareal</span>
 <span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> . <span class="im">import</span> abstract</span>
 <span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1035,30 +1247,48 @@ These are PyFoam routines that may need to be replaced</li>
 </div>
 <section id="components" class="level2">
 <h2>Components</h2>
-<p>We may present the Parareal algorithm in abstract terms, and match those terms with corresponding type definitions in Python.</p>
+<p>We may present the Parareal algorithm in abstract terms, and match
+those terms with corresponding type definitions in Python.</p>
 <p>We need to define the following:</p>
 <blockquote>
 <dl>
 <dt><code>Vector</code></dt>
-<dd><p>A <code>Vector</code> is an object that represents the state of a solution at any one time. On this state we need to be able to do addition, subtraction and scalar multiplication, in order to perform the Parareal algorithm.</p>
+<dd>
+<p>A <code>Vector</code> is an object that represents the state of a
+solution at any one time. On this state we need to be able to do
+addition, subtraction and scalar multiplication, in order to perform the
+Parareal algorithm.</p>
 </dd>
 <dt><code>Solution</code></dt>
-<dd><p>A <code>Solution</code> is a function that takes an initial <code>Vector</code>, a time <code>t_0</code> and a time <code>t</code>, returning the state <code>Vector</code> at time <code>t</code>.</p>
+<dd>
+<p>A <code>Solution</code> is a function that takes an initial
+<code>Vector</code>, a time <code>t_0</code> and a time <code>t</code>,
+returning the state <code>Vector</code> at time <code>t</code>.</p>
 </dd>
 <dt><code>Mapping</code></dt>
-<dd><p>A <code>Mapping</code> is a function from one state <code>Vector</code> to another, for example a mapping from a coarse to a fine mesh or vice-versa.</p>
+<dd>
+<p>A <code>Mapping</code> is a function from one state
+<code>Vector</code> to another, for example a mapping from a coarse to a
+fine mesh or vice-versa.</p>
 </dd>
 <dt>Fine <code>Solution</code></dt>
-<dd><p>The <em>fine</em> solution is the solution at the desired resolution. If we were not doing parallel-in-time, this would be the integrator to get at the correct result. We may also use the fine solution to find a ground thruth in testing the Parareal solution.</p>
+<dd>
+<p>The <em>fine</em> solution is the solution at the desired resolution.
+If we were not doing parallel-in-time, this would be the integrator to
+get at the correct result. We may also use the fine solution to find a
+ground thruth in testing the Parareal solution.</p>
 </dd>
 <dt>Coarse <code>Solution</code></dt>
-<dd><p>The <em>coarse</em> solution is the solution that is fast but less accurate.</p>
+<dd>
+<p>The <em>coarse</em> solution is the solution that is fast but less
+accurate.</p>
 </dd>
 </dl>
 </blockquote>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/abstract.py</p>
-<div class="sourceCode" id="cb54"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<div class="sourceCode" id="cb54"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
 <span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> (Callable, Protocol, TypeVar, Union)</span>
 <span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>abstract<span class="op">-</span>types<span class="op">&gt;&gt;</span></span></code></pre></div>
@@ -1066,13 +1296,26 @@ These are PyFoam routines that may need to be replaced</li>
 <section id="vector-1" class="level3">
 <h3>Vector</h3>
 <p>We have an ODE in the form</p>
-<p><span id="eq:ode" class="eqnos"><span class="math display">\[y&#39; = f(y, t).\]</span><span class="eqnos-number">(1)</span></span></p>
-<p>Here <span class="math inline">\(y\)</span> can be a scalar value, a vector of values (say a <code>numpy</code> array), or any expression of <em>state</em>. A naive implementation of an ODE integrator would be</p>
-<p><span id="eq:euler-method" class="eqnos"><span class="math display">\[y_{n+1} = y_{n} + \Delta t f(y_{n}, t).\]</span><span class="eqnos-number">(2)</span></span></p>
-<p>eq. <a href="#eq:euler-method">2</a> is known as the <em>forward Euler method</em>. We can capture the <em>state</em> <span class="math inline">\(y\)</span> in an abstract class we’ll call <code>Vector</code>. We chose this name because we expect this objects to share (some of) the arithmetic properties of mathematical vectors. Namely, we want to be able to add, subtract and scale them. The chunk below states this need of a basic arithmetic in the form of abstract methods.</p>
+<p><span id="eq:ode" class="eqnos"><span class="math display">\[y&#39; =
+f(y, t).\]</span><span class="eqnos-number">(1)</span></span></p>
+<p>Here <span class="math inline">\(y\)</span> can be a scalar value, a
+vector of values (say a <code>numpy</code> array), or any expression of
+<em>state</em>. A naive implementation of an ODE integrator would be</p>
+<p><span id="eq:euler-method" class="eqnos"><span
+class="math display">\[y_{n+1} = y_{n} + \Delta t f(y_{n},
+t).\]</span><span class="eqnos-number">(2)</span></span></p>
+<p>eq. <a href="#eq:euler-method">2</a> is known as the <em>forward
+Euler method</em>. We can capture the <em>state</em> <span
+class="math inline">\(y\)</span> in an abstract class we’ll call
+<code>Vector</code>. We chose this name because we expect this objects
+to share (some of) the arithmetic properties of mathematical vectors.
+Namely, we want to be able to add, subtract and scale them. The chunk
+below states this need of a basic arithmetic in the form of abstract
+methods.</p>
 <div class="named-code-block">
 <p>«abstract-types»</p>
-<div class="sourceCode" id="cb55"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>TVector <span class="op">=</span> TypeVar(<span class="st">&quot;TVector&quot;</span>, bound<span class="op">=</span><span class="st">&quot;Vector&quot;</span>)</span>
+<div class="sourceCode" id="cb55"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>TVector <span class="op">=</span> TypeVar(<span class="st">&quot;TVector&quot;</span>, bound<span class="op">=</span><span class="st">&quot;Vector&quot;</span>)</span>
 <span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Vector(Protocol):</span>
 <span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__add__</span>(<span class="va">self</span>: TVector, other: TVector) <span class="op">-&gt;</span> TVector:</span>
@@ -1087,51 +1330,91 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__rmul__</span>(<span class="va">self</span>: TVector, other: <span class="bu">float</span>) <span class="op">-&gt;</span> TVector:</span>
 <span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a>        ...</span></code></pre></div>
 </div>
-<p><em>We don’t actually need to implement these methods right now. All this is saying, is that any type that has these methods defined can stand in for a <code>Vector</code>.</em></p>
-<p>Note that we don’t make a formal distinction here between a state vector and a vector representing a change in state.</p>
+<p><em>We don’t actually need to implement these methods right now. All
+this is saying, is that any type that has these methods defined can
+stand in for a <code>Vector</code>.</em></p>
+<p>Note that we don’t make a formal distinction here between a state
+vector and a vector representing a change in state.</p>
 <div class="named-code-block">
 <p>«abstract-types»</p>
-<div class="sourceCode" id="cb56"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>Mapping <span class="op">=</span> Callable[[TVector], TVector]</span></code></pre></div>
+<div class="sourceCode" id="cb56"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>Mapping <span class="op">=</span> Callable[[TVector], TVector]</span></code></pre></div>
 </div>
 </section>
 <section id="problem" class="level3">
 <h3>Problem</h3>
-<p>An ODE is then given as a function taking a <code>Vector</code> (the state <span class="math inline">\(y\)</span>) and a <code>float</code> (the time <span class="math inline">\(t\)</span>) returning a <code>Vector</code> (the derivative <span class="math inline">\(y&#39; = f(y,t)\)</span> evaluated at <span class="math inline">\((y,t)\)</span>). We define the type <code>Problem</code>:</p>
+<p>An ODE is then given as a function taking a <code>Vector</code> (the
+state <span class="math inline">\(y\)</span>) and a <code>float</code>
+(the time <span class="math inline">\(t\)</span>) returning a
+<code>Vector</code> (the derivative <span class="math inline">\(y&#39; =
+f(y,t)\)</span> evaluated at <span
+class="math inline">\((y,t)\)</span>). We define the type
+<code>Problem</code>:</p>
 <div class="named-code-block">
 <p>«abstract-types»</p>
-<div class="sourceCode" id="cb57"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>Problem <span class="op">=</span> Callable[[TVector, <span class="bu">float</span>], TVector]</span></code></pre></div>
+<div class="sourceCode" id="cb57"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>Problem <span class="op">=</span> Callable[[TVector, <span class="bu">float</span>], TVector]</span></code></pre></div>
 </div>
 <p>In mathematical notation the snippet above means:</p>
-<p><span class="math display">\[{\rm Problem} : (y, t) \to f(y, t) = y&#39;\]</span></p>
+<p><span class="math display">\[{\rm Problem} : (y, t) \to f(y, t) =
+y&#39;\]</span></p>
 </section>
 <section id="solution" class="level3">
 <h3>Solution</h3>
-<p>If we have a <code>Problem</code>, we’re after a <code>Solution</code>: a function that, given an initial <code>Vector</code> (the initial condition <span class="math inline">\(y_0\)</span>), initial time (<span class="math inline">\(t_0\)</span>) and final time (<span class="math inline">\(t\)</span>), gives the resulting <code>Vector</code> (the solution, <span class="math inline">\(y(t)\)</span> for the given initial conditions).</p>
+<p>If we have a <code>Problem</code>, we’re after a
+<code>Solution</code>: a function that, given an initial
+<code>Vector</code> (the initial condition <span
+class="math inline">\(y_0\)</span>), initial time (<span
+class="math inline">\(t_0\)</span>) and final time (<span
+class="math inline">\(t\)</span>), gives the resulting
+<code>Vector</code> (the solution, <span
+class="math inline">\(y(t)\)</span> for the given initial
+conditions).</p>
 <div class="named-code-block">
 <p>«abstract-types»</p>
-<div class="sourceCode" id="cb58"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>Solution <span class="op">=</span> Union[Callable[[TVector, <span class="bu">float</span>, <span class="bu">float</span>], TVector],</span>
+<div class="sourceCode" id="cb58"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>Solution <span class="op">=</span> Union[Callable[[TVector, <span class="bu">float</span>, <span class="bu">float</span>], TVector],</span>
 <span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>                 Callable[..., TVector]]</span></code></pre></div>
 </div>
-<p>Those readers more familiar with classical physics or mathematics may notice that our <code>Problem</code> object corresponds with the function <span class="math inline">\(f\)</span> in (eq. <a href="#eq:ode">1</a>). The <code>Solution</code> object, on the other hand, corresponds with the evolution operator <span class="math inline">\(\phi\)</span> in equation <a href="#eq:solution">3</a>.</p>
-<p><span id="eq:solution" class="eqnos"><span class="math display">\[{\rm Solution} : (y_0, t_0; t) \to \phi(y_0, t_0; t) = y.\]</span><span class="eqnos-number">(3)</span></span></p>
-<p>Intuitively, <span class="math inline">\(\phi\)</span> represents any method that solves (even approximately) our initial value problem.</p>
+<p>Those readers more familiar with classical physics or mathematics may
+notice that our <code>Problem</code> object corresponds with the
+function <span class="math inline">\(f\)</span> in (eq. <a
+href="#eq:ode">1</a>). The <code>Solution</code> object, on the other
+hand, corresponds with the evolution operator <span
+class="math inline">\(\phi\)</span> in equation <a
+href="#eq:solution">3</a>.</p>
+<p><span id="eq:solution" class="eqnos"><span
+class="math display">\[{\rm Solution} : (y_0, t_0; t) \to \phi(y_0, t_0;
+t) = y.\]</span><span class="eqnos-number">(3)</span></span></p>
+<p>Intuitively, <span class="math inline">\(\phi\)</span> represents any
+method that solves (even approximately) our initial value problem.</p>
 <section id="example" class="level4">
 <h4>Example</h4>
 <p>An example of a <code>Problem</code> would be the function,</p>
 <p><span class="math display">\[f(y, t) = r y,\]</span></p>
 <p>in which case the corresponding <code>Solution</code> is,</p>
-<p><span class="math display">\[\phi(y_0, t_0; t) = y_0 e^{r(t - t_0)}.\]</span></p>
+<p><span class="math display">\[\phi(y_0, t_0; t) = y_0 e^{r(t -
+t_0)}.\]</span></p>
 </section>
 </section>
 <section id="solver" class="level3">
 <h3>Solver</h3>
-<p>The challenge is, of course, to find a way of transforming a <code>Problem</code> into a <code>Solution</code>. This is what integration algorithms, or <em>solvers</em> do:</p>
-<p><span class="math display">\[{\rm Solver} : {\rm Problem} \to {\rm Solution}.\]</span></p>
-<p>If we look a bit closely at the definitions of <code>Problem</code> and <code>Solution</code> we’ll notice that a solver is indeed a functional that accepts functions of <span class="math inline">\((y,t)\)</span> as an input and returns functions of <span class="math inline">\((y_0, t_0, t)\)</span> as an output.</p>
-<p>An example of such a solver is the forward Euler method (eq. <a href="#eq:euler-method">2</a>), that can be implemented as:</p>
+<p>The challenge is, of course, to find a way of transforming a
+<code>Problem</code> into a <code>Solution</code>. This is what
+integration algorithms, or <em>solvers</em> do:</p>
+<p><span class="math display">\[{\rm Solver} : {\rm Problem} \to {\rm
+Solution}.\]</span></p>
+<p>If we look a bit closely at the definitions of <code>Problem</code>
+and <code>Solution</code> we’ll notice that a solver is indeed a
+functional that accepts functions of <span
+class="math inline">\((y,t)\)</span> as an input and returns functions
+of <span class="math inline">\((y_0, t_0, t)\)</span> as an output.</p>
+<p>An example of such a solver is the forward Euler method (eq. <a
+href="#eq:euler-method">2</a>), that can be implemented as:</p>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/forward_euler.py</p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Vector, Problem, Solution)</span>
+<div class="sourceCode" id="cb59"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Vector, Problem, Solution)</span>
 <span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> forward_euler(f: Problem) <span class="op">-&gt;</span> Solution:</span>
 <span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Forward-Euler solver.&quot;&quot;&quot;</span></span>
@@ -1140,14 +1423,18 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> y <span class="op">+</span> (t_1 <span class="op">-</span> t_0) <span class="op">*</span> f(y, t_0)</span>
 <span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> step</span></code></pre></div>
 </div>
-<p>Any existing solution can be iterated over to provide a solution over a larger time interval. The <code>iterate_solution</code> function runs a given solution with a step-size fixed to <span class="math inline">\(\Delta t = h\)</span>.</p>
+<p>Any existing solution can be iterated over to provide a solution over
+a larger time interval. The <code>iterate_solution</code> function runs
+a given solution with a step-size fixed to <span
+class="math inline">\(\Delta t = h\)</span>.</p>
 <!--$${\rm Iter}[S, h]\Big|_{t_0, y = y}^{t_1} = \begin{cases}-->
 <!--y & t_0 = t_1 \\-->
 <!--{\rm Iter}[S, h]\big|_{t_0 + h, y = S(y, t_0, t_0 + h)}^{t_1} & {\rm otherwise}-->
 <!--\end{cases}.$$-->
 <div class="named-code-block">
 <p>file:pintFoam/parareal/iterate_solution.py</p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Vector, Solution)</span>
+<div class="sourceCode" id="cb60"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Vector, Solution)</span>
 <span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
 <span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1163,19 +1450,31 @@ These are PyFoam routines that may need to be replaced</li>
 </div>
 <section id="example-damped-harmonic-oscillator" class="level4">
 <h4>Example: damped harmonic oscillator</h4>
-<p>We give a bit more attention to the example of the harmonic oscillator, because it will also serve as a first test case for the Parareal algorithm later on.</p>
-<p>The harmonic oscillator can model the movement of a pendulum or the vibration of a mass on a string.</p>
-<p><span class="math display">\[y&#39;&#39; + 2\zeta \omega_0 y&#39; + \omega_0^2 y = 0,\]</span></p>
-<p>where <span class="math inline">\(\omega_0 = \sqrt{k/m}\)</span> and <span class="math inline">\(\zeta = c / 2\sqrt{mk}\)</span>, <span class="math inline">\(k\)</span> being the spring constant, <span class="math inline">\(m\)</span> the test mass and <span class="math inline">\(c\)</span> the friction constant.</p>
-<p>To solve this second order ODE we need to introduce a second variable to solve for. Say <span class="math inline">\(q = y\)</span> and <span class="math inline">\(p = y&#39;\)</span>.</p>
-<p><span id="eq:harmonic-oscillator" class="eqnos"><span class="math display">\[\begin{aligned}
+<p>We give a bit more attention to the example of the harmonic
+oscillator, because it will also serve as a first test case for the
+Parareal algorithm later on.</p>
+<p>The harmonic oscillator can model the movement of a pendulum or the
+vibration of a mass on a string.</p>
+<p><span class="math display">\[y&#39;&#39; + 2\zeta \omega_0 y&#39; +
+\omega_0^2 y = 0,\]</span></p>
+<p>where <span class="math inline">\(\omega_0 = \sqrt{k/m}\)</span> and
+<span class="math inline">\(\zeta = c / 2\sqrt{mk}\)</span>, <span
+class="math inline">\(k\)</span> being the spring constant, <span
+class="math inline">\(m\)</span> the test mass and <span
+class="math inline">\(c\)</span> the friction constant.</p>
+<p>To solve this second order ODE we need to introduce a second variable
+to solve for. Say <span class="math inline">\(q = y\)</span> and <span
+class="math inline">\(p = y&#39;\)</span>.</p>
+<p><span id="eq:harmonic-oscillator" class="eqnos"><span
+class="math display">\[\begin{aligned}
     q&#39; &amp;= p\\
     p&#39; &amp;= -2\zeta \omega_0 p + \omega_0^2 q
 \end{aligned}\]</span><span class="eqnos-number">(4)</span></span> </p>
 <p>The <code>Problem</code> is then given as</p>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/harmonic_oscillator.py</p>
-<div class="sourceCode" id="cb61"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Problem)</span>
+<div class="sourceCode" id="cb61"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Problem)</span>
 <span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Callable</span>
 <span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy.typing <span class="im">import</span> NDArray</span>
 <span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -1229,22 +1528,43 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="exact-solution" class="level4">
 <h4>Exact solution</h4>
-<p>The damped harmonic oscillator has an exact solution, given the ansatz <span class="math inline">\(y = A \exp(z t)\)</span>, we get</p>
-<p><span class="math display">\[z_{\pm} = \omega_0\left(-\zeta \pm \sqrt{\zeta^2 - 1}\right).\]</span></p>
+<p>The damped harmonic oscillator has an exact solution, given the
+ansatz <span class="math inline">\(y = A \exp(z t)\)</span>, we get</p>
+<p><span class="math display">\[z_{\pm} = \omega_0\left(-\zeta \pm
+\sqrt{\zeta^2 - 1}\right).\]</span></p>
 <p>and thus the general solution:</p>
-<p><span class="math display">\[y(t) = A \exp(z_+ t) + B \exp(z_- t) \ : \zeta \neq 1 \]</span> <span class="math display">\[y(t) = (A + Bt) \exp(-\omega_0 t) : \zeta = 1 \]</span></p>
-<p>This dynamical system has three qualitatively different solutions, each of them depending on the sign of the contents of the square root. Particularly, if the contents of the square root are negative, the two possible values for <span class="math inline">\(z\)</span> will be complex numbers, making oscillations possible. More specifically, the three cases are:</p>
+<p><span class="math display">\[y(t) = A \exp(z_+ t) + B \exp(z_- t) \ :
+\zeta \neq 1 \]</span> <span class="math display">\[y(t) = (A + Bt)
+\exp(-\omega_0 t) : \zeta = 1 \]</span></p>
+<p>This dynamical system has three qualitatively different solutions,
+each of them depending on the sign of the contents of the square root.
+Particularly, if the contents of the square root are negative, the two
+possible values for <span class="math inline">\(z\)</span> will be
+complex numbers, making oscillations possible. More specifically, the
+three cases are:</p>
 <ul>
-<li><em>overdamped</em> (<span class="math inline">\(\zeta &gt; 1\)</span> and, thus, both <span class="math inline">\(z\)</span> are real numbers)</li>
-<li><em>critical dampening</em> (<span class="math inline">\(\zeta = 1\)</span> and <span class="math inline">\(z\)</span> is real and equal to <span class="math inline">\(-\omega_0\)</span>)</li>
-<li><em>underdamped</em> (<span class="math inline">\(\mid \zeta \mid &lt; 1\)</span>, and <span class="math inline">\(z = -\omega_0\zeta \mp i \omega_0 \sqrt{1 - \zeta^2}\)</span>).</li>
+<li><em>overdamped</em> (<span class="math inline">\(\zeta &gt;
+1\)</span> and, thus, both <span class="math inline">\(z\)</span> are
+real numbers)</li>
+<li><em>critical dampening</em> (<span class="math inline">\(\zeta =
+1\)</span> and <span class="math inline">\(z\)</span> is real and equal
+to <span class="math inline">\(-\omega_0\)</span>)</li>
+<li><em>underdamped</em> (<span class="math inline">\(\mid \zeta \mid
+&lt; 1\)</span>, and <span class="math inline">\(z = -\omega_0\zeta \mp
+i \omega_0 \sqrt{1 - \zeta^2}\)</span>).</li>
 </ul>
-<p>The underdamped case is typically the most interesting one. In this case we have solutions of the form:</p>
-<p><span class="math display">\[y = A\quad \underbrace{\exp(-\omega_0\zeta t)}_{\rm dampening}\quad\underbrace{\exp(\pm i \omega_0 \sqrt{1 - \zeta^2} t)}_{\rm oscillation},\]</span></p>
-<p>Given an initial condition <span class="math inline">\(q_0 = 1, p_0 = 0\)</span>, the solution is computed as</p>
+<p>The underdamped case is typically the most interesting one. In this
+case we have solutions of the form:</p>
+<p><span class="math display">\[y = A\quad
+\underbrace{\exp(-\omega_0\zeta t)}_{\rm
+dampening}\quad\underbrace{\exp(\pm i \omega_0 \sqrt{1 - \zeta^2}
+t)}_{\rm oscillation},\]</span></p>
+<p>Given an initial condition <span class="math inline">\(q_0 = 1, p_0 =
+0\)</span>, the solution is computed as</p>
 <div class="named-code-block">
 <p>«harmonic-oscillator-solution»</p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> underdamped_solution(omega_0: <span class="bu">float</span>, zeta: <span class="bu">float</span>) <span class="op">\</span></span>
+<div class="sourceCode" id="cb62"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> underdamped_solution(omega_0: <span class="bu">float</span>, zeta: <span class="bu">float</span>) <span class="op">\</span></span>
 <span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>        <span class="op">-&gt;</span> Callable[[NDArray[np.float64]], NDArray[np.float64]]:</span>
 <span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>    amp   <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> np.sqrt(<span class="dv">1</span> <span class="op">-</span> zeta<span class="op">**</span><span class="dv">2</span>)</span>
 <span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>    phase <span class="op">=</span> np.arcsin(zeta)</span>
@@ -1260,10 +1580,12 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="numeric-solution" class="level4">
 <h4>Numeric solution</h4>
-<p>To plot a <code>Solution</code>, we need to tabulate the results for a given sequence of time points.</p>
+<p>To plot a <code>Solution</code>, we need to tabulate the results for
+a given sequence of time points.</p>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/tabulate_solution.py</p>
-<div class="sourceCode" id="cb63"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Solution, Vector)</span>
+<div class="sourceCode" id="cb63"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Solution, Vector)</span>
 <span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> (Sequence, Any)</span>
 <span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1283,18 +1605,23 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb63-18"><a href="#cb63-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb63-19"><a href="#cb63-19" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>tabulate<span class="op">-</span>np<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
-<p>In the case that the <code>Vector</code> type is actually a numpy array, we can specialize the <code>tabulate</code> routine to return a larger array.</p>
+<p>In the case that the <code>Vector</code> type is actually a numpy
+array, we can specialize the <code>tabulate</code> routine to return a
+larger array.</p>
 <div class="named-code-block">
 <p>«tabulate-np»</p>
-<div class="sourceCode" id="cb64"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tabulate_np(step: Solution, y_0: Array, t: Array) <span class="op">-&gt;</span> Array:</span>
+<div class="sourceCode" id="cb64"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tabulate_np(step: Solution, y_0: Array, t: Array) <span class="op">-&gt;</span> Array:</span>
 <span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> np.zeros(dtype<span class="op">=</span>y_0.dtype, shape<span class="op">=</span>(t.size,) <span class="op">+</span> y_0.shape)</span>
 <span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>    y[<span class="dv">0</span>] <span class="op">=</span> y_0</span>
 <span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, t.size):</span>
 <span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="op">=</span> step(y[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i])</span>
 <span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> y</span></code></pre></div>
 </div>
-<p>We can compare the results from the numeric integration with the exact solution.</p>
-<p><img src="img/harmonic.svg" title="Damped harmonic oscillator" class="figure" alt="Damped harmonic oscillator" /></p>
+<p>We can compare the results from the numeric integration with the
+exact solution.</p>
+<p><img src="img/harmonic.svg" title="Damped harmonic oscillator"
+class="figure" alt="Damped harmonic oscillator" /></p>
 </section>
 </section>
 </section>
@@ -1303,37 +1630,94 @@ These are PyFoam routines that may need to be replaced</li>
 <p>From Wikipedia:</p>
 <blockquote>
 <p>Parareal solves an initial value problem of the form</p>
-<p><span class="math display">\[\dot{y}(t) = f(y(t), t), \quad y(t_0) = y_0 \quad \text{with} \quad t_0 \leq t \leq T.\]</span></p>
-<p>Here, the right hand side <span class="math inline">\(f\)</span> can correspond to the spatial discretization of a partial differential equation in a method of lines approach. Parareal now requires a decomposition of the time interval <span class="math inline">\([t_0, T]\)</span> into <span class="math inline">\(P\)</span> so-called time slices <span class="math inline">\([t_j, t_{j+1}]\)</span> such that</p>
-<p><span class="math display">\[[t_0, T] = [t_0, t_1] \cup [t_1, t_2] \cup \ldots \cup [t_{P-1}, t_{P} ].\]</span></p>
-<p>Each time slice is assigned to one processing unit when parallelizing the algorithm, so that <span class="math inline">\(P\)</span> is equal to the number of processing units used for Parareal.</p>
-<p>Parareal is based on the iterative application of two methods for integration of ordinary differential equations. One, commonly labelled <span class="math inline">\({\mathcal {F}}\)</span>, should be of high accuracy and computational cost while the other, typically labelled <span class="math inline">\({\mathcal {G}}\)</span>, must be computationally cheap but can be much less accurate. Typically, some form of Runge-Kutta method is chosen for both coarse and fine integrator, where <span class="math inline">\({\mathcal {G}}\)</span> might be of lower order and use a larger time step than <span class="math inline">\({\mathcal {F}}\)</span>. If the initial value problem stems from the discretization of a PDE, <span class="math inline">\({\mathcal {G}}\)</span> can also use a coarser spatial discretization, but this can negatively impact convergence unless high order interpolation is used. The result of numerical integration with one of these methods over a time slice <span class="math inline">\([t_{j}, t_{j+1}]\)</span> for some starting value <span class="math inline">\(y_{j}\)</span> given at <span class="math inline">\(t_{j}\)</span> is then written as</p>
-<p><span class="math display">\[y = \mathcal{F}(y_j, t_j, t_{j+1})\ {\rm or}\ y = \mathcal{G}(y_j, t_j, t_{j+1}).\]</span></p>
-<p>Serial time integration with the fine method would then correspond to a step-by-step computation of</p>
-<p><span class="math display">\[y_{j+1} = \mathcal{F}(y_j, t_j, t_{j+1}), \quad j=0, \ldots, P-1.\]</span></p>
+<p><span class="math display">\[\dot{y}(t) = f(y(t), t), \quad y(t_0) =
+y_0 \quad \text{with} \quad t_0 \leq t \leq T.\]</span></p>
+<p>Here, the right hand side <span class="math inline">\(f\)</span> can
+correspond to the spatial discretization of a partial differential
+equation in a method of lines approach. Parareal now requires a
+decomposition of the time interval <span class="math inline">\([t_0,
+T]\)</span> into <span class="math inline">\(P\)</span> so-called time
+slices <span class="math inline">\([t_j, t_{j+1}]\)</span> such that</p>
+<p><span class="math display">\[[t_0, T] = [t_0, t_1] \cup [t_1, t_2]
+\cup \ldots \cup [t_{P-1}, t_{P} ].\]</span></p>
+<p>Each time slice is assigned to one processing unit when parallelizing
+the algorithm, so that <span class="math inline">\(P\)</span> is equal
+to the number of processing units used for Parareal.</p>
+<p>Parareal is based on the iterative application of two methods for
+integration of ordinary differential equations. One, commonly labelled
+<span class="math inline">\({\mathcal {F}}\)</span>, should be of high
+accuracy and computational cost while the other, typically labelled
+<span class="math inline">\({\mathcal {G}}\)</span>, must be
+computationally cheap but can be much less accurate. Typically, some
+form of Runge-Kutta method is chosen for both coarse and fine
+integrator, where <span class="math inline">\({\mathcal {G}}\)</span>
+might be of lower order and use a larger time step than <span
+class="math inline">\({\mathcal {F}}\)</span>. If the initial value
+problem stems from the discretization of a PDE, <span
+class="math inline">\({\mathcal {G}}\)</span> can also use a coarser
+spatial discretization, but this can negatively impact convergence
+unless high order interpolation is used. The result of numerical
+integration with one of these methods over a time slice <span
+class="math inline">\([t_{j}, t_{j+1}]\)</span> for some starting value
+<span class="math inline">\(y_{j}\)</span> given at <span
+class="math inline">\(t_{j}\)</span> is then written as</p>
+<p><span class="math display">\[y = \mathcal{F}(y_j, t_j, t_{j+1})\ {\rm
+or}\ y = \mathcal{G}(y_j, t_j, t_{j+1}).\]</span></p>
+<p>Serial time integration with the fine method would then correspond to
+a step-by-step computation of</p>
+<p><span class="math display">\[y_{j+1} = \mathcal{F}(y_j, t_j,
+t_{j+1}), \quad j=0, \ldots, P-1.\]</span></p>
 <p>Parareal instead uses the following iteration</p>
-<p><span class="math display">\[y_{j+1}^{k+1} = \mathcal{G}(y^{k+1}_j, t_j, t_{j+1}) + \mathcal{F}(y^k_j, t_j, t_{j+1}) - \mathcal{G}(y^k_j, t_j, t_{j+1}),\\ \quad j=0, \ldots, P-1, \quad k=0, \ldots, K-1,\]</span></p>
-<p>where <span class="math inline">\(k\)</span> is the iteration counter. As the iteration converges and <span class="math inline">\(y^{k+1}_j - y^k_j \to 0\)</span>, the terms from the coarse method cancel out and Parareal reproduces the solution that is obtained by the serial execution of the fine method only. It can be shown that Parareal converges after a maximum of <span class="math inline">\(P\)</span> iterations. For Parareal to provide speedup, however, it has to converge in a number of iterations significantly smaller than the number of time slices, that is <span class="math inline">\(K \ll P\)</span>.</p>
-<p>In the Parareal iteration, the computationally expensive evaluation of <span class="math inline">\(\mathcal{F}(y^k_j, t_j, t_{j+1})\)</span> can be performed in parallel on <span class="math inline">\(P\)</span> processing units. By contrast, the dependency of <span class="math inline">\(y^{k+1}_{j+1}\)</span> on <span class="math inline">\(\mathcal{G}(y^{k+1}_j, t_j, t_{j+1})\)</span> means that the coarse correction has to be computed in serial order.</p>
+<p><span class="math display">\[y_{j+1}^{k+1} = \mathcal{G}(y^{k+1}_j,
+t_j, t_{j+1}) + \mathcal{F}(y^k_j, t_j, t_{j+1}) - \mathcal{G}(y^k_j,
+t_j, t_{j+1}),\\ \quad j=0, \ldots, P-1, \quad k=0, \ldots,
+K-1,\]</span></p>
+<p>where <span class="math inline">\(k\)</span> is the iteration
+counter. As the iteration converges and <span
+class="math inline">\(y^{k+1}_j - y^k_j \to 0\)</span>, the terms from
+the coarse method cancel out and Parareal reproduces the solution that
+is obtained by the serial execution of the fine method only. It can be
+shown that Parareal converges after a maximum of <span
+class="math inline">\(P\)</span> iterations. For Parareal to provide
+speedup, however, it has to converge in a number of iterations
+significantly smaller than the number of time slices, that is <span
+class="math inline">\(K \ll P\)</span>.</p>
+<p>In the Parareal iteration, the computationally expensive evaluation
+of <span class="math inline">\(\mathcal{F}(y^k_j, t_j, t_{j+1})\)</span>
+can be performed in parallel on <span class="math inline">\(P\)</span>
+processing units. By contrast, the dependency of <span
+class="math inline">\(y^{k+1}_{j+1}\)</span> on <span
+class="math inline">\(\mathcal{G}(y^{k+1}_j, t_j, t_{j+1})\)</span>
+means that the coarse correction has to be computed in serial order.</p>
 </blockquote>
-<p>Don’t get blinded by the details of the algorithm. After all, everything boils down to an update equation that uses a state vector <span class="math inline">\(y\)</span> to calculate the state at the immediately next future step (in the same fashion as equation eq. <a href="#eq:euler-method">2</a> did). The core equation translates to:</p>
+<p>Don’t get blinded by the details of the algorithm. After all,
+everything boils down to an update equation that uses a state vector
+<span class="math inline">\(y\)</span> to calculate the state at the
+immediately next future step (in the same fashion as equation eq. <a
+href="#eq:euler-method">2</a> did). The core equation translates to:</p>
 <div class="named-code-block">
 <p>«parareal-core-1»</p>
-<div class="sourceCode" id="cb65"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>y_n[i] <span class="op">=</span> coarse(y_n[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i]) <span class="op">\</span></span>
+<div class="sourceCode" id="cb65"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>y_n[i] <span class="op">=</span> coarse(y_n[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i]) <span class="op">\</span></span>
 <span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>       <span class="op">+</span> fine(y[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i]) <span class="op">\</span></span>
 <span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>       <span class="op">-</span> coarse(y[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i])</span></code></pre></div>
 </div>
-<p>If we include a <code>Mapping</code> between fine and coarse meshes into the equation, we get:</p>
+<p>If we include a <code>Mapping</code> between fine and coarse meshes
+into the equation, we get:</p>
 <div class="named-code-block">
 <p>«parareal-core-2»</p>
-<div class="sourceCode" id="cb66"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>y_n[i] <span class="op">=</span> c2f(coarse(f2c(y_n[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i])) <span class="op">\</span></span>
+<div class="sourceCode" id="cb66"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>y_n[i] <span class="op">=</span> c2f(coarse(f2c(y_n[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i])) <span class="op">\</span></span>
 <span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>       <span class="op">+</span> fine(y[i<span class="op">-</span><span class="dv">1</span>], t[i<span class="op">-</span><span class="dv">1</span>], t[i]) <span class="op">\</span></span>
 <span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>       <span class="op">-</span> c2f(coarse(f2c(y[i<span class="op">-</span><span class="dv">1</span>]), t[i<span class="op">-</span><span class="dv">1</span>], t[i]))</span></code></pre></div>
 </div>
-<p>The rest is boiler plate. For the <code>c2f</code> and <code>f2c</code> mappings we provide a default argument of the identity function.</p>
+<p>The rest is boiler plate. For the <code>c2f</code> and
+<code>f2c</code> mappings we provide a default argument of the identity
+function.</p>
 <div class="named-code-block">
 <p>file:pintFoam/parareal/parareal.py</p>
-<div class="sourceCode" id="cb67"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Solution, Mapping)</span>
+<div class="sourceCode" id="cb67"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .abstract <span class="im">import</span> (Solution, Mapping)</span>
 <span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> identity(x):</span>
@@ -1372,11 +1756,13 @@ These are PyFoam routines that may need to be replaced</li>
 <h2>Running in parallel</h2>
 <div class="named-code-block">
 <p>«import-dask»</p>
-<div class="sourceCode" id="cb68"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dask <span class="im">import</span> delayed</span></code></pre></div>
+<div class="sourceCode" id="cb68"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dask <span class="im">import</span> delayed</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb69"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span><span class="im">import</span><span class="op">-</span>dask<span class="op">&gt;&gt;</span></span>
+<div class="sourceCode" id="cb69"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span><span class="im">import</span><span class="op">-</span>dask<span class="op">&gt;&gt;</span></span>
 <span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pintFoam.parareal.harmonic_oscillator <span class="im">import</span> <span class="op">\</span></span>
@@ -1402,10 +1788,14 @@ These are PyFoam routines that may need to be replaced</li>
 <span id="cb69-24"><a href="#cb69-24" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gather(<span class="op">*</span>args):</span>
 <span id="cb69-25"><a href="#cb69-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">list</span>(args)</span></code></pre></div>
 </div>
-<p>To see what Noodles does, first we’ll daskify the direct integration routine in <code>tabulate</code>. We take the same harmonic oscillator we had before. For the sake of argument let’s divide the time line in three steps (so four points).</p>
+<p>To see what Noodles does, first we’ll daskify the direct integration
+routine in <code>tabulate</code>. We take the same harmonic oscillator
+we had before. For the sake of argument let’s divide the time line in
+three steps (so four points).</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb70"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>omega_0 <span class="op">=</span> <span class="fl">1.0</span></span>
+<div class="sourceCode" id="cb70"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>omega_0 <span class="op">=</span> <span class="fl">1.0</span></span>
 <span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>zeta <span class="op">=</span> <span class="fl">0.5</span></span>
 <span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> harmonic_oscillator(omega_0, zeta)</span>
 <span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">15.0</span>, <span class="dv">4</span>)</span></code></pre></div>
@@ -1413,55 +1803,82 @@ These are PyFoam routines that may need to be replaced</li>
 <p>We now define the <code>fine</code> integrator:</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb71"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>h <span class="op">=</span> <span class="fl">0.01</span></span>
+<div class="sourceCode" id="cb71"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>h <span class="op">=</span> <span class="fl">0.01</span></span>
 <span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a><span class="at">@green</span></span>
 <span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
 <span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fine(x, t_0, t_1):</span>
 <span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> iterate_solution(forward_euler(f), h)(x, t_0, t_1)</span></code></pre></div>
 </div>
-<p>It doesn’t really matter what the fine integrator does, since we won’t run anything. We’ll just pretend. The <code>delayed</code> decorator makes sure that the integrator is never called, we just store the information that we <em>want</em> to call the <code>fine</code> function. The resulting value is a <em>promise</em> that at some point we <em>will</em> call the <code>fine</code> function. The nice thing is, that this promise behaves like any other Python object, it even qualifies as a <code>Vector</code>! The <code>tabulate</code> routine returns a <code>Sequence</code> of <code>Vector</code>s, in this case a list of promises. The <code>gather</code> function takes a list of promises and turns it into a promise of a list.</p>
+<p>It doesn’t really matter what the fine integrator does, since we
+won’t run anything. We’ll just pretend. The <code>delayed</code>
+decorator makes sure that the integrator is never called, we just store
+the information that we <em>want</em> to call the <code>fine</code>
+function. The resulting value is a <em>promise</em> that at some point
+we <em>will</em> call the <code>fine</code> function. The nice thing is,
+that this promise behaves like any other Python object, it even
+qualifies as a <code>Vector</code>! The <code>tabulate</code> routine
+returns a <code>Sequence</code> of <code>Vector</code>s, in this case a
+list of promises. The <code>gather</code> function takes a list of
+promises and turns it into a promise of a list.</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb72"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>y_euler <span class="op">=</span> tabulate(fine, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t)</span></code></pre></div>
+<div class="sourceCode" id="cb72"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>y_euler <span class="op">=</span> tabulate(fine, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t)</span></code></pre></div>
 </div>
 <p>We can draw the resulting workflow:</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb73"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>gather(<span class="op">*</span>y_euler).visualize(<span class="st">&quot;seq-graph.svg&quot;</span>, rankdir<span class="op">=</span><span class="st">&quot;LR&quot;</span>, data_attributes<span class="op">=</span>attrs)</span></code></pre></div>
+<div class="sourceCode" id="cb73"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>gather(<span class="op">*</span>y_euler).visualize(<span class="st">&quot;seq-graph.svg&quot;</span>, rankdir<span class="op">=</span><span class="st">&quot;LR&quot;</span>, data_attributes<span class="op">=</span>attrs)</span></code></pre></div>
 </div>
 <figure>
-<img src="./img/seq-graph.svg" style="width:100%" alt="Sequential integration" /><figcaption aria-hidden="true">Sequential integration</figcaption>
+<img src="./img/seq-graph.svg" style="width:100%"
+alt="Sequential integration" />
+<figcaption aria-hidden="true">Sequential integration</figcaption>
 </figure>
-<p>This workflow is entirely sequential, every step depending on the preceding one. Now for Parareal! We also define the <code>coarse</code> integrator.</p>
+<p>This workflow is entirely sequential, every step depending on the
+preceding one. Now for Parareal! We also define the <code>coarse</code>
+integrator.</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb74"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
+<div class="sourceCode" id="cb74"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="at">@delayed</span></span>
 <span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> coarse(x, t_0, t_1):</span>
 <span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> forward_euler(f)(x, t_0, t_1)</span></code></pre></div>
 </div>
-<p>Parareal is initialised with the ODE integrated by the coarse integrator, just like we did before with the fine one.</p>
+<p>Parareal is initialised with the ODE integrated by the coarse
+integrator, just like we did before with the fine one.</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb75"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>y_first <span class="op">=</span> tabulate(coarse, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t)</span></code></pre></div>
+<div class="sourceCode" id="cb75"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>y_first <span class="op">=</span> tabulate(coarse, [<span class="fl">1.0</span>, <span class="fl">0.0</span>], t)</span></code></pre></div>
 </div>
-<p>We can now perform a single iteration of Parareal to see what the workflow looks like:</p>
+<p>We can now perform a single iteration of Parareal to see what the
+workflow looks like:</p>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb76"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>y_parareal <span class="op">=</span> gather(<span class="op">*</span>parareal(coarse, fine)(y_first, t))</span></code></pre></div>
+<div class="sourceCode" id="cb76"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>y_parareal <span class="op">=</span> gather(<span class="op">*</span>parareal(coarse, fine)(y_first, t))</span></code></pre></div>
 </div>
 <div class="named-code-block">
 <p>«daskify»</p>
-<div class="sourceCode" id="cb77"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>y_parareal.visualize(<span class="st">&quot;parareal-graph.pdf&quot;</span>, rankdir<span class="op">=</span><span class="st">&quot;LR&quot;</span>, data_attributes<span class="op">=</span>attrs)</span></code></pre></div>
+<div class="sourceCode" id="cb77"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>y_parareal.visualize(<span class="st">&quot;parareal-graph.pdf&quot;</span>, rankdir<span class="op">=</span><span class="st">&quot;LR&quot;</span>, data_attributes<span class="op">=</span>attrs)</span></code></pre></div>
 </div>
 <figure>
-<img src="./img/parareal-graph.svg" style="width:100%" alt="Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel." /><figcaption aria-hidden="true">Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel.</figcaption>
+<img src="./img/parareal-graph.svg" style="width:100%"
+alt="Parareal iteration; the fine integrators (marked with blue squares) can be run in parallel." />
+<figcaption aria-hidden="true">Parareal iteration; the fine integrators
+(marked with blue squares) can be run in parallel.</figcaption>
 </figure>
 <section id="create-example-file" class="level3">
 <h3>Create example file</h3>
 <div class="named-code-block">
 <p>file:examples/harmonic_oscillator.py</p>
-<div class="sourceCode" id="cb78"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>plot<span class="op">-</span>harmonic<span class="op">-</span>oscillator<span class="op">&gt;&gt;</span></span>
+<div class="sourceCode" id="cb78"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>plot<span class="op">-</span>harmonic<span class="op">-</span>oscillator<span class="op">&gt;&gt;</span></span>
 <span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;&lt;</span>daskify<span class="op">&gt;&gt;</span></span></code></pre></div>
 </div>
@@ -1470,10 +1887,12 @@ These are PyFoam routines that may need to be replaced</li>
 </section>
 <section id="unit-testing" class="level1">
 <h1>Unit testing</h1>
-<p>Unit testing needs to be done on cases that are easy. For the moment we have selected <code>pitzDaily</code> for this.</p>
+<p>Unit testing needs to be done on cases that are easy. For the moment
+we have selected <code>pitzDaily</code> for this.</p>
 <div class="named-code-block">
 <p>file:test/test_foam_run.py</p>
-<div class="sourceCode" id="cb79"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<div class="sourceCode" id="cb79"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shutil <span class="im">import</span> copytree</span>
 <span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1556,48 +1975,95 @@ These are PyFoam routines that may need to be replaced</li>
          <div class="col-3 col-s-3 menu" id="menu-container">
                 <div id="menu"><nav id="TOC" role="doc-toc">
                                 <ul>
-                                <li><a href="#about">About</a>
+                                <li><a href="#about"
+                                id="toc-about">About</a>
                                 <ul>
-                                <li><a href="#installing">Installing</a></li>
+                                <li><a href="#installing"
+                                id="toc-installing">Installing</a></li>
                                 </ul></li>
-                                <li><a href="#architecture">Architecture</a>
+                                <li><a href="#architecture"
+                                id="toc-architecture">Architecture</a>
                                 <ul>
-                                <li><a href="#implementation">Implementation</a></li>
+                                <li><a href="#implementation"
+                                id="toc-implementation">Implementation</a></li>
                                 </ul></li>
-                                <li><a href="#openfoam-calls">OpenFOAM calls</a>
+                                <li><a href="#openfoam-calls"
+                                id="toc-openfoam-calls">OpenFOAM
+                                calls</a>
                                 <ul>
-                                <li><a href="#setfields-utility"><code>setFields</code> utility</a></li>
-                                <li><a href="#mapfields"><code>mapFields</code></a></li>
-                                <li><a href="#blockmesh"><code>blockMesh</code></a></li>
-                                <li><a href="#implementation-of-solution">Implementation of <code>Solution</code></a></li>
+                                <li><a href="#setfields-utility"
+                                id="toc-setfields-utility"><code>setFields</code>
+                                utility</a></li>
+                                <li><a href="#mapfields"
+                                id="toc-mapfields"><code>mapFields</code></a></li>
+                                <li><a href="#blockmesh"
+                                id="toc-blockmesh"><code>blockMesh</code></a></li>
+                                <li><a
+                                href="#implementation-of-solution"
+                                id="toc-implementation-of-solution">Implementation
+                                of <code>Solution</code></a></li>
                                 </ul></li>
-                                <li><a href="#appendix-a-utils">Appendix A: Utils</a>
+                                <li><a href="#appendix-a-utils"
+                                id="toc-appendix-a-utils">Appendix A:
+                                Utils</a>
                                 <ul>
-                                <li><a href="#cleaning-up">Cleaning up</a></li>
-                                <li><a href="#pushd"><code>pushd</code></a></li>
-                                <li><a href="#job-names">Job names</a></li>
+                                <li><a href="#cleaning-up"
+                                id="toc-cleaning-up">Cleaning
+                                up</a></li>
+                                <li><a href="#pushd"
+                                id="toc-pushd"><code>pushd</code></a></li>
+                                <li><a href="#job-names"
+                                id="toc-job-names">Job names</a></li>
                                 </ul></li>
-                                <li><a href="#example-using-mpi-and-dask-futures">Example using MPI and Dask Futures</a>
+                                <li><a
+                                href="#example-using-mpi-and-dask-futures"
+                                id="toc-example-using-mpi-and-dask-futures">Example
+                                using MPI and Dask Futures</a>
                                 <ul>
-                                <li><a href="#vector-arithmetic-expressions">Vector Arithmetic Expressions</a></li>
-                                <li><a href="#running-the-harmonic-oscillator">Running the harmonic oscillator</a></li>
+                                <li><a
+                                href="#vector-arithmetic-expressions"
+                                id="toc-vector-arithmetic-expressions">Vector
+                                Arithmetic Expressions</a></li>
+                                <li><a
+                                href="#running-the-harmonic-oscillator"
+                                id="toc-running-the-harmonic-oscillator">Running
+                                the harmonic oscillator</a></li>
                                 </ul></li>
-                                <li><a href="#implementation-of-parareal-using-futures">Implementation of Parareal using Futures</a>
+                                <li><a
+                                href="#implementation-of-parareal-using-futures"
+                                id="toc-implementation-of-parareal-using-futures">Implementation
+                                of Parareal using Futures</a>
                                 <ul>
-                                <li><a href="#harmonic-oscillator">Harmonic oscillator</a></li>
+                                <li><a href="#harmonic-oscillator"
+                                id="toc-harmonic-oscillator">Harmonic
+                                oscillator</a></li>
                                 </ul></li>
-                                <li><a href="#parareal">Parareal</a>
+                                <li><a href="#parareal"
+                                id="toc-parareal">Parareal</a>
                                 <ul>
-                                <li><a href="#components">Components</a></li>
-                                <li><a href="#parareal-1">Parareal</a></li>
-                                <li><a href="#running-in-parallel">Running in parallel</a></li>
+                                <li><a href="#components"
+                                id="toc-components">Components</a></li>
+                                <li><a href="#parareal-1"
+                                id="toc-parareal-1">Parareal</a></li>
+                                <li><a href="#running-in-parallel"
+                                id="toc-running-in-parallel">Running in
+                                parallel</a></li>
                                 </ul></li>
-                                <li><a href="#unit-testing">Unit testing</a></li>
-                                <li><a href="#tutorial">Tutorial</a>
+                                <li><a href="#unit-testing"
+                                id="toc-unit-testing">Unit
+                                testing</a></li>
+                                <li><a href="#tutorial"
+                                id="toc-tutorial">Tutorial</a>
                                 <ul>
-                                <li><a href="#small-introduction-to-dask">Small introduction to Dask</a></li>
-                                <li><a href="#interface-with-openfoam">Interface with OpenFOAM</a></li>
-                                <li><a href="#examples">Examples</a></li>
+                                <li><a
+                                href="#small-introduction-to-dask"
+                                id="toc-small-introduction-to-dask">Small
+                                introduction to Dask</a></li>
+                                <li><a href="#interface-with-openfoam"
+                                id="toc-interface-with-openfoam">Interface
+                                with OpenFOAM</a></li>
+                                <li><a href="#examples"
+                                id="toc-examples">Examples</a></li>
                                 </ul></li>
                                 </ul>
                 </nav></div>

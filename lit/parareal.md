@@ -277,8 +277,8 @@ Array = Any
 def tabulate(step: Solution, y_0: Vector, t: Array) -> Sequence[Vector]:
     """Tabulate the step-wise solution, starting from `y_0`, for every time
     point given in array `t`."""
-    if isinstance(y_0, np.ndarray):
-        return tabulate_np(step, y_0, t)
+    # if isinstance(y_0, np.ndarray):
+    #     return tabulate_np(step, y_0, t)
 
     y = [y_0]
     for i in range(1, t.size):
@@ -423,7 +423,7 @@ def parareal_np(
 ## Running in parallel
 
 ``` {.python #import-dask}
-from dask import delayed
+from dask import delayed  # type: ignore
 ```
 
 ``` {.python #daskify}
@@ -438,6 +438,8 @@ from pintFoam.parareal.tabulate_solution import \
     ( tabulate )
 from pintFoam.parareal.parareal import \
     ( parareal )
+from pintFoam.parareal.iterate_solution import \
+    ( iterate_solution)
 
 
 attrs = {}
@@ -477,7 +479,7 @@ def fine(x, t_0, t_1):
 It doesn't really matter what the fine integrator does, since we won't run anything. We'll just pretend. The `delayed` decorator makes sure that the integrator is never called, we just store the information that we *want* to call the `fine` function. The resulting value is a *promise* that at some point we *will* call the `fine` function. The nice thing is, that this promise behaves like any other Python object, it even qualifies as a `Vector`! The `tabulate` routine returns a `Sequence` of `Vector`s, in this case a list of promises. The `gather` function takes a list of promises and turns it into a promise of a list.
 
 ``` {.python #daskify}
-y_euler = tabulate(fine, [1.0, 0.0], t)
+y_euler = tabulate(fine, np.array([1.0, 0.0]), t)
 ```
 
 We can draw the resulting workflow:
@@ -499,7 +501,7 @@ def coarse(x, t_0, t_1):
 Parareal is initialised with the ODE integrated by the coarse integrator, just like we did before with the fine one.
 
 ``` {.python #daskify}
-y_first = tabulate(coarse, [1.0, 0.0], t)
+y_first = tabulate(coarse, np.array([1.0, 0.0]), t)
 ```
 
 We can now perform a single iteration of Parareal to see what the workflow looks like:
@@ -517,7 +519,7 @@ y_parareal.visualize("parareal-graph.pdf", rankdir="LR", data_attributes=attrs)
 ### Create example file
 
 ``` {.python file=examples/harmonic_oscillator.py}
-<<plot-harmonic-oscillator>>
+
 
 <<daskify>>
 ```
