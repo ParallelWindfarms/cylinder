@@ -43,9 +43,7 @@ def main(log: str = "WARNING", log_file: Optional[str] = None):
     <<example-mpi-main>>
 
 if __name__ == "__main__":
-    import time
     argh.dispatch_command(main)
-    time.sleep(10)
 ```
 
 There are two modes in which we may run Dask with MPI. One with a `dask-mpi` running as external scheduler, the other running everything as a single script. For this example we opt for the second, straight from the dask-mpi documentation:
@@ -62,9 +60,11 @@ client = Client()
 ```
 
 ## Vector Arithmetic Expressions
-The following technique is definitely overkill for our harmonic oscillator example, but it is also in general a good recipe for running Numpy based simulations in an organized manner.
+### Best practices
+The following shows some best practices when working with orchestrated computations. One is about using well established data standards, the other about reducing overhead on the distributed scheduler. We can solve both these issues by abstracting over the representation of the state vector in our system. This technique is definitely overkill for our harmonic oscillator example, but it is also in general a good recipe for running Numpy based simulations in an organized manner.
 
-It may be convenient to treat our `Vector` operations such that they are only performed once their output is needed. In the meantime we have to store the arithmetic in a serializable `Expression` value.
+### Abstract vectors
+It may be convenient to treat our `Vector` operations such that they are only performed once their output is needed. That way, we only need to schedule the actual integration steps as external jobs. In the meantime we have to store the arithmetic in a serializable `Expression` value. By doing this we reduce the amount of jobs that have to be handled by the scheduler.
 
 We will be using `functools.partial` and functions `operator.add`, `operator.mul` etc, to create a data structure that describes all the operations that we might do on a `Vector`. Results may be stored for reference in a `hdf5` file, a feature that can also be hidden behind our `Vector` interface.
 
@@ -106,7 +106,7 @@ def reduce_expr(expr: Union[np.ndarray, Vector]) -> np.ndarray:
 ```
 
 ### HDF5 Vectors
-This means we can also hide variables that are stored in an HDF5 file behind this interface:
+This means we can also hide variables that are stored in an HDF5 file behind this interface. We often want to store more information than just the state vector. In the case of parareal, we have results from fine integration and coarse integration. In the case of fine integration, what we need to represent is the final state of the integration, but we are also interested in the intermediate steps.
 
 ``` {.python #vector-expressions}
 @dataclass
@@ -138,6 +138,8 @@ class Index:
 
 index = Index()
 ```
+
+Then `index[a:b,c]` returns a list of slices `[slice(a,b), c]` (type `list[Union[None, int, slice]]`).
 
 ### Operators
 There are two classes of operators, unary and binary (more arguments can usually be expressed as a composition of unary and binary forms). We store the arguments together with a function operating on the arguments. The function should be serializable (e.g. using `pickle`), meaning that `lambda` expressions are not allowed, but `partial` applications and functions in `operator` typically are ok.
@@ -194,7 +196,7 @@ import logging
 
 ``` {.python #example-mpi-main}
 OMEGA0 = 1.0
-ZETA = 1.0
+ZETA = 0.5
 H = 0.001
 system = harmonic_oscillator(OMEGA0, ZETA)
 ```

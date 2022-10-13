@@ -208,7 +208,7 @@ def main(log: str = "WARNING", log_file: Optional[str] = None):
     # ~\~ end
     # ~\~ begin <<lit/mpi_oscillator.md|example-mpi-main>>[1]
     OMEGA0 = 1.0
-    ZETA = 1.0
+    ZETA = 0.5
     H = 0.001
     system = harmonic_oscillator(OMEGA0, ZETA)
     # ~\~ end
@@ -233,7 +233,5 @@ def main(log: str = "WARNING", log_file: Optional[str] = None):
     # ~\~ end
 
 if __name__ == "__main__":
-    import time
     argh.dispatch_command(main)
-    time.sleep(10)
 # ~\~ end
