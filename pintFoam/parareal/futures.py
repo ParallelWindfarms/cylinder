@@ -18,7 +18,6 @@ def pairs(lst):
 # ~\~ end
 # ~\~ begin <<lit/parafutures.md|parareal-futures>>[1]
 def combine(c1: Vector, f1: Vector, c2: Vector) -> Vector:
-    logging.debug(f"combine: {c1} {f1} {c2}")
     return c1 + f1 - c2
 # ~\~ end
 # ~\~ begin <<lit/parafutures.md|parareal-futures>>[2]
@@ -52,10 +51,9 @@ class Parareal:
     def step(self, n_iter: int, y_prev: list[Future], t: NDArray[np.float64]) -> list[Future]:
         m = t.size
         y_next = [None] * m
-        for i in range(n_iter):
-            y_next[i] = y_prev[i]
+        y_next[0] = y_prev[0]
 
-        for i in range(n_iter, m):
+        for i in range(1, m):
             c1 = self._c2f(self._coarse(n_iter, self.f2c(y_next[i-1]), t[i-1], t[i]))
             f1 = self._fine(n_iter, y_prev[i-1], t[i-1], t[i])
             c2 = self._c2f(self._coarse(n_iter, self.f2c(y_prev[i-1]), t[i-1], t[i]))

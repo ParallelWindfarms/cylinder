@@ -51,11 +51,29 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
             aux = aux * 10 ** (length - 1) # Displace the decimal point to the right
         return int(aux)
 
-    def stringify(t, length=tlength):
-        if integrify(t) == 0:
-            return "0" * length
+    def trim_zeros(t):
+        """Trim zeros
+
+        for instance:
+
+        trim_zeros(0.0012345)
+        1.2345
+        """
+        if t == 0:
+            return 0
         else:
-            return str(integrify(t))
+            return t * 10 ** -floor(log10(t))
+
+    def stringify(t, length=tlength):
+        """ Turn a float into a string with a given length
+
+        for instance:
+
+        stringify(0.0012345, length=2)
+        '12'
+        """
+        format_string = "." + str(length-1) + "f" # For instance: .5f
+        return f"{trim_zeros(t):{format_string}}".replace(".", "")
 
     return f"{n}-{stringify(t_0)}-{stringify(t_1)}-{id}-{uid.hex}"
 # ~\~ end
