@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=test/test_foam_run.py
-# ~\~ begin <<lit/testing.md|test/test_foam_run.py>>[0]
+# ~\~ begin <<lit/testing.md|test/test_foam_run.py>>[init]
 from pathlib import Path
 from shutil import copytree
 import numpy as np

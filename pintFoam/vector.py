@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=pintFoam/vector.py
-# ~\~ begin <<lit/cylinder.md|pintFoam/vector.py>>[0]
+# ~\~ begin <<lit/cylinder.md|pintFoam/vector.py>>[init]
 from __future__ import annotations
 
 import operator
@@ -19,7 +19,7 @@ from byteparsing import parse_bytes, foam_file
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile  # type: ignore
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory      # type: ignore
 
-# ~\~ begin <<lit/cylinder.md|base-case>>[0]
+# ~\~ begin <<lit/cylinder.md|base-case>>[init]
 @dataclass
 class BaseCase:
     """Base case is a cleaned version of the system. If it contains any fields,
@@ -51,7 +51,7 @@ class BaseCase:
         for path in self.all_vector_paths():
             rmtree(path)
 # ~\~ end
-# ~\~ begin <<lit/cylinder.md|pintfoam-vector>>[0]
+# ~\~ begin <<lit/cylinder.md|pintfoam-vector>>[init]
 def solution_directory(case):
     return SolutionDirectory(case.path)
 
@@ -82,7 +82,7 @@ class Vector:
     case: str
     time: str
 
-    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-properties>>[0]
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-properties>>[init]
     @property
     def path(self):
         """Case path, i.e. the path containing `system`, `constant` and snapshots."""
@@ -121,7 +121,7 @@ class Vector:
             del content
             gc.collect()
     # ~\~ end
-    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[0]
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-clone>>[init]
     def clone(self, name: Optional[str] = None) -> Vector:
         """Clone this vector to a new one. The clone only contains this single snapshot."""
         x = self.base.new_vector(name)
@@ -130,7 +130,7 @@ class Vector:
         copytree(self.dirname, x.dirname)
         return x
     # ~\~ end
-    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[0]
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operate>>[init]
     def zip_with(self, other: Vector, op) -> Vector:
         x = self.clone()
 
@@ -147,7 +147,7 @@ class Vector:
                 a()[:] = f(a())
         return x
     # ~\~ end
-    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operators>>[0]
+    # ~\~ begin <<lit/cylinder.md|pintfoam-vector-operators>>[init]
     def __sub__(self, other: Vector) -> Vector:
         return self.zip_with(other, operator.sub)
 

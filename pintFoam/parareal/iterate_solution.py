@@ -1,5 +1,5 @@
 # ~\~ language=Python filename=pintFoam/parareal/iterate_solution.py
-# ~\~ begin <<lit/parareal.md|pintFoam/parareal/iterate_solution.py>>[0]
+# ~\~ begin <<lit/parareal.md|pintFoam/parareal/iterate_solution.py>>[init]
 from .abstract import (Vector, Solution)
 import numpy as np
 import math

@@ -400,6 +400,38 @@ return Vector(y.base, y.case, t1_str)
 
 ``` {.python file=pintFoam/utils.py}
 <<push-dir>>
+
+def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
+    """ Auxiliary function to generate a job name."""
+
+    if any([t_0 < 0, t_1 < 0]):
+        raise ValueError("Times must be positive.")
+
+    def trim_zeros(t):
+        """Trim zeros
+
+        for instance:
+
+        trim_zeros(0.0012345)
+        1.2345
+        """
+        if t == 0:
+            return 0
+        else:
+            return t * 10 ** -floor(log10(t))
+
+    def stringify(t, length=tlength):
+        """ Turn a float into a string with a given length
+
+        for instance:
+
+        stringify(0.0012345, length=2)
+        '12'
+        """
+        format_string = "." + str(length-1) + "f" # For instance: .5f
+        return f"{trim_zeros(t):{format_string}}".replace(".", "")
+
+    return f"{n}-{stringify(t_0)}-{stringify(t_1)}-{id}-{uid.hex}"
 ```
 
 ## Cleaning up
@@ -431,6 +463,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from typing import Union
 import functools
+from numpy import (floor, log10)
 
 
 def decorator(f):
