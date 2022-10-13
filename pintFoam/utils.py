@@ -1,6 +1,6 @@
 # ~\~ language=Python filename=pintFoam/utils.py
-# ~\~ begin <<lit/cylinder.md|pintFoam/utils.py>>[0]
-# ~\~ begin <<lit/cylinder.md|push-dir>>[0]
+# ~\~ begin <<lit/cylinder.md|pintFoam/utils.py>>[init]
+# ~\~ begin <<lit/cylinder.md|push-dir>>[init]
 import os
 from pathlib import Path
 from contextlib import contextmanager
@@ -38,7 +38,6 @@ def pushd(path: Union[str, Path]):
     finally:
         os.chdir(prev)
 # ~\~ end
-# ~\~ end
 
 def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
     """ Auxiliary function to generate a job name."""
@@ -47,8 +46,8 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
         raise ValueError("Times must be positive.")
 
     def trim_zeros(t):
-        """Trim zeros 
-        
+        """Trim zeros
+
         for instance:
 
         trim_zeros(0.0012345)
@@ -60,7 +59,7 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
             return t * 10 ** -floor(log10(t))
 
     def stringify(t, length=tlength):
-        """ Turn a float into a string with a given length 
+        """ Turn a float into a string with a given length
 
         for instance:
 
@@ -69,5 +68,6 @@ def generate_job_name(n, t_0, t_1, uid, id, tlength=4):
         """
         format_string = "." + str(length-1) + "f" # For instance: .5f
         return f"{trim_zeros(t):{format_string}}".replace(".", "")
-    
+
     return f"{n}-{stringify(t_0)}-{stringify(t_1)}-{id}-{uid.hex}"
+# ~\~ end
